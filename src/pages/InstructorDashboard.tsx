@@ -1,11 +1,10 @@
-import { users2025Student, AlertTriangle, Users, GitCommit, TrendingUp } from "lucide-react";
+import { AlertTriangle as AT, Users as U, GitCommit as GC, TrendingUp as TU } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { RiskDonutChart } from "@/components/dashboard/RiskDonutChart";
 import { CommitTimelineChart } from "@/components/dashboard/CommitTimelineChart";
 import { StudentTable } from "@/components/dashboard/StudentTable";
 import { students, course, classWeeklyCommits } from "@/data/mockData";
-import { AlertTriangle as AT, Users as U, GitCommit as GC, TrendingUp as TU } from "lucide-react";
 
 interface InstructorDashboardProps {
   onRoleSwitch: () => void;
