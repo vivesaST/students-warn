@@ -1,96 +1,49 @@
 
-## Early Warning System — UI Plan
+## Plan: Create Downloadable Documentation Package
 
-A full-featured dark analytics dashboard with two role-based views (Instructor & Student), powered by realistic mock data and Recharts visualizations.
+The user wants comprehensive downloadable documents covering:
+1. Project documentation (technical overview, architecture, features)
+2. Demo walkthrough (screenshots/guide of what's built)
+3. What remains to make the system fully functional (backend, ML, integrations)
+4. Other relevant materials (setup guide, API spec, etc.)
 
----
+I'll create 3 polished PDF documents using reportlab:
 
-### Pages & Routes
+**Document 1: Project Documentation** (`earlyWarn_project_documentation.pdf`)
+- System overview, purpose, architecture
+- Current frontend features (pages, components, charts)
+- Data model / mock data schema
+- Design system (colors, components)
+- Tech stack
 
-| Route | Description |
-|---|---|
-| `/` | Role selector (switch between Instructor / Student view) |
-| `/instructor` | Instructor dashboard |
-| `/instructor/student/:id` | Individual student profile |
-| `/student` | Student personal dashboard |
+**Document 2: Demo Guide** (`earlyWarn_demo_guide.pdf`)
+- Step-by-step walkthrough of the UI
+- Page-by-page feature descriptions with what each section shows
+- How to navigate between views
+- What the mock data represents
 
----
+**Document 3: Remaining Work Roadmap** (`earlyWarn_remaining_work.pdf`)
+- What's built vs what's remaining
+- Backend (Flask/Python) tasks
+- Database setup (PostgreSQL schema)
+- GitHub/GitLab API integration
+- ML pipeline (feature engineering, model training)
+- Authentication (JWT)
+- Deployment considerations
+- Estimated effort per phase
 
-### Design System
-- **Dark theme** throughout: `#0f172a` base, `#1e293b` cards, slate borders
-- **Risk colors**: Red (high), Amber (moderate), Green (low)
-- **Accent**: Sky blue `#38bdf8` for interactive elements
-- Update `index.css` with a dark color palette
+I'll write a Python script using reportlab to generate all three PDFs, then do QA by converting to images.
 
----
+### Implementation approach
+- Use reportlab with Platypus (SimpleDocTemplate) for structured layout
+- Use consistent branding: dark accent `#38bdf8` (sky blue), risk colors red/amber/green
+- Tables for structured data, proper headings, bullet lists
+- Page headers and footers with page numbers
+- All files saved to `/mnt/documents/`
 
-### Shared Layout
-- **Sidebar navigation** with role badge (Instructor / Student)
-- Role toggle in header to switch views (simulating login switch)
-- Breadcrumb for drill-down pages
+### Files to generate
+- `/mnt/documents/earlyWarn_project_documentation.pdf`
+- `/mnt/documents/earlyWarn_demo_guide.pdf`  
+- `/mnt/documents/earlyWarn_remaining_work.pdf`
 
----
-
-### Instructor Dashboard (`/instructor`)
-
-**Top stats row** (4 KPI cards):
-- Total Students enrolled
-- High-risk count (red)
-- Moderate-risk count (amber)
-- Avg. commits this week
-
-**Charts row:**
-1. **Risk Distribution Donut** — high/moderate/low breakdown
-2. **Commit Activity Timeline** — stacked bar chart, last 8 weeks, class aggregate
-
-**Student Table** (sortable + filterable by risk level):
-- Student name, avatar initials, course, risk level badge, last commit date, commit count, prediction score, "View Profile" button
-
----
-
-### Individual Student Profile (`/instructor/student/:id`)
-- Header: name, course, risk badge, GitHub URL
-- **Risk Trend Line Chart** — weekly risk score over 12 weeks
-- **Radar Chart** — 6 behavioral features vs class average (commit frequency, regularity, branch usage, issue resolution, code churn, message quality)
-- **Commit Activity Bar Chart** — daily commits last 30 days
-- **Metrics grid**: 15 prediction features with values and comparison arrows
-- **AI Recommendations panel** — 3 actionable recommendations based on risk factors
-
----
-
-### Student Dashboard (`/student`)
-- **Personal risk level banner** — large risk badge with explanation text
-- **Behavioral metrics grid** — personal vs class average for 6 key metrics
-- **Radar Chart** — same as instructor view but from student perspective
-- **Commit Activity Timeline** — personal activity last 8 weeks
-- **Risk Trend Chart** — own risk score progression
-- **Recommendations cards** — personalized action items (e.g., "Commit more regularly", "Use feature branches")
-- **Contributing factors list** — top 3 features pushing risk up/down
-
----
-
-### Mock Data
-- **1 course**: "Software Engineering 2025"
-- **12 students**: mix of high (3), moderate (5), low (4) risk
-- **12 weeks of history** per student with realistic commit patterns
-- All 15 prediction features populated per student
-
----
-
-### Components to create
-- `src/pages/Index.tsx` — role selector landing
-- `src/pages/InstructorDashboard.tsx`
-- `src/pages/StudentProfile.tsx`
-- `src/pages/StudentDashboard.tsx`
-- `src/components/layout/Sidebar.tsx`
-- `src/components/layout/AppLayout.tsx`
-- `src/components/dashboard/RiskBadge.tsx`
-- `src/components/dashboard/KPICard.tsx`
-- `src/components/dashboard/RiskDonutChart.tsx`
-- `src/components/dashboard/CommitTimelineChart.tsx`
-- `src/components/dashboard/RiskTrendChart.tsx`
-- `src/components/dashboard/RadarChart.tsx`
-- `src/components/dashboard/StudentTable.tsx`
-- `src/components/dashboard/RecommendationsPanel.tsx`
-- `src/data/mockData.ts` — all mock students, courses, features, predictions
-- Install `recharts` for all charts
+No code changes to the React app are needed — this is a pure document generation task using Python scripts.
