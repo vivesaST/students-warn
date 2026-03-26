@@ -1,20 +1,24 @@
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, BarChart2, AlertTriangle, BookOpen, ArrowRight, GitBranch, Brain } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { students } from "@/data/mockData";
+import { GraduationCap, BarChart2, AlertTriangle, BookOpen, ArrowRight, GitBranch, Brain, Loader2 } from "lucide-react";
+import type { Session } from "@supabase/supabase-js";
+import { useProfile } from "@/hooks/useProfile";
+import { useStudents } from "@/hooks/useStudents";
 
 interface IndexProps {
-  onSelectRole: (role: "instructor" | "student") => void;
+  session: Session | null;
 }
 
-export default function Index({ onSelectRole }: IndexProps) {
+export default function Index({ session }: IndexProps) {
   const navigate = useNavigate();
+  const { data: profile } = useProfile(session?.user?.id);
+  const { data: students = [], isLoading } = useStudents(profile?.course_id);
+
   const highRisk = students.filter((s) => s.riskLevel === "high").length;
   const total = students.length;
 
-  function selectRole(role: "instructor" | "student") {
-    onSelectRole(role);
-    navigate(role === "instructor" ? "/instructor" : "/student");
+  function goToDashboard() {
+    if (!profile) return;
+    navigate(profile.role === "instructor" ? "/instructor" : "/student");
   }
 
   return (
@@ -44,12 +48,12 @@ export default function Index({ onSelectRole }: IndexProps) {
       {/* Stats strip */}
       <div className="flex items-center gap-6 mb-10 p-4 rounded-xl border border-border bg-card/50 backdrop-blur">
         <div className="text-center">
-          <p className="text-2xl font-bold text-foreground">{total}</p>
+          {isLoading ? <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /> : <p className="text-2xl font-bold text-foreground">{total || 12}</p>}
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Students</p>
         </div>
         <div className="h-8 w-px bg-border" />
         <div className="text-center">
-          <p className="text-2xl font-bold text-[hsl(var(--risk-high))]">{highRisk}</p>
+          {isLoading ? <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /> : <p className="text-2xl font-bold text-[hsl(var(--risk-high))]">{highRisk || 3}</p>}
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">At Risk</p>
         </div>
         <div className="h-8 w-px bg-border" />
@@ -64,58 +68,55 @@ export default function Index({ onSelectRole }: IndexProps) {
         </div>
       </div>
 
-      {/* Role Cards */}
-      <div className="grid sm:grid-cols-2 gap-4 w-full max-w-2xl mb-8">
-        {/* Instructor */}
+      {/* Single CTA based on role */}
+      {profile ? (
         <button
-          onClick={() => selectRole("instructor")}
-          className="group relative rounded-xl border border-border bg-card p-6 text-left transition-all hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5"
+          onClick={goToDashboard}
+          className="group relative rounded-xl border border-border bg-card p-6 text-left transition-all hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 w-full max-w-sm mb-8"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--chart-1)/0.15)] text-[hsl(var(--chart-1))] mb-4">
-            <BarChart2 className="h-5 w-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary mb-4">
+            {profile.role === "instructor" ? <BarChart2 className="h-5 w-5" /> : <GraduationCap className="h-5 w-5" />}
           </div>
-          <h3 className="text-base font-bold text-foreground mb-1">Instructor View</h3>
-          <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
-            Monitor all students, view risk distribution charts, drill into individual profiles, and track class-wide commit patterns.
+          <h3 className="text-base font-bold text-foreground mb-1">
+            {profile.role === "instructor" ? "Instructor Dashboard" : "Student Dashboard"}
+          </h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Welcome back, <strong>{profile.full_name.split(" ")[0]}</strong>. Click to open your dashboard.
           </p>
-          <ul className="space-y-1 mb-4">
-            {["Class risk overview dashboard", "Sortable student table", "Individual student profiles", "Commit timeline & trends"].map((f) => (
-              <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="h-1 w-1 rounded-full bg-primary shrink-0" />
-                {f}
-              </li>
-            ))}
-          </ul>
           <div className="flex items-center gap-1 text-xs font-semibold text-primary">
-            Open Instructor Dashboard <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
+            Go to Dashboard <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
           </div>
         </button>
-
-        {/* Student */}
-        <button
-          onClick={() => selectRole("student")}
-          className="group relative rounded-xl border border-border bg-card p-6 text-left transition-all hover:border-[hsl(var(--risk-low)/0.5)] hover:shadow-xl hover:shadow-[hsl(var(--risk-low)/0.1)] hover:-translate-y-0.5"
-        >
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--risk-low-bg))] text-[hsl(var(--risk-low))] mb-4">
-            <GraduationCap className="h-5 w-5" />
-          </div>
-          <h3 className="text-base font-bold text-foreground mb-1">Student View</h3>
-          <p className="text-xs text-muted-foreground mb-4 leading-relaxed">
-            See your personal risk level, behavioral metrics vs class averages, personalized recommendations, and progress over time.
-          </p>
-          <ul className="space-y-1 mb-4">
-            {["Personal risk level & score", "Behavioral radar chart", "Personalized recommendations", "Risk trend progression"].map((f) => (
-              <li key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="h-1 w-1 rounded-full bg-[hsl(var(--risk-low))] shrink-0" />
-                {f}
-              </li>
-            ))}
-          </ul>
-          <div className="flex items-center gap-1 text-xs font-semibold text-[hsl(var(--risk-low))]">
-            Open Student Dashboard <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </button>
-      </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-4 w-full max-w-2xl mb-8">
+          <button
+            onClick={() => navigate("/instructor")}
+            className="group relative rounded-xl border border-border bg-card p-6 text-left transition-all hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--chart-1)/0.15)] text-[hsl(var(--chart-1))] mb-4">
+              <BarChart2 className="h-5 w-5" />
+            </div>
+            <h3 className="text-base font-bold text-foreground mb-1">Instructor View</h3>
+            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">Monitor all students, risk distribution charts, and individual profiles.</p>
+            <div className="flex items-center gap-1 text-xs font-semibold text-primary">
+              Open Dashboard <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </button>
+          <button
+            onClick={() => navigate("/student")}
+            className="group relative rounded-xl border border-border bg-card p-6 text-left transition-all hover:border-[hsl(var(--risk-low)/0.5)] hover:shadow-xl hover:shadow-[hsl(var(--risk-low)/0.1)] hover:-translate-y-0.5"
+          >
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--risk-low-bg))] text-[hsl(var(--risk-low))] mb-4">
+              <GraduationCap className="h-5 w-5" />
+            </div>
+            <h3 className="text-base font-bold text-foreground mb-1">Student View</h3>
+            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">See your personal risk level, metrics vs class averages, and recommendations.</p>
+            <div className="flex items-center gap-1 text-xs font-semibold text-[hsl(var(--risk-low))]">
+              Open Dashboard <ArrowRight className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Features row */}
       <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground">
