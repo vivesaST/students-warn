@@ -1,5 +1,6 @@
-import { BarChart2, BookOpen, GraduationCap, Home, Users } from "lucide-react";
+import { BarChart2, BookOpen, GraduationCap, Home, Users, LogOut } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import type { Session } from "@supabase/supabase-js";
 import {
   Sidebar,
   SidebarContent,
@@ -15,9 +16,12 @@ import {
 } from "@/components/ui/sidebar";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useProfile } from "@/hooks/useProfile";
 
 interface AppSidebarProps {
   role: "instructor" | "student";
+  session: Session | null;
   onRoleSwitch: () => void;
 }
 
@@ -33,12 +37,21 @@ const studentNav = [
   { title: "Course Info", url: "/student", icon: BookOpen },
 ];
 
-export function AppSidebar({ role, onRoleSwitch }: AppSidebarProps) {
+export function AppSidebar({ role, session, onRoleSwitch }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
   const navigate = useNavigate();
+  const { data: profile } = useProfile(session?.user?.id);
+
   const navItems = role === "instructor" ? instructorNav : studentNav;
+  const displayName = profile?.full_name ?? (role === "instructor" ? "Dr. Sarah Mitchell" : "Student");
+  const courseName = "Software Engineering 2025";
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
@@ -92,12 +105,7 @@ export function AppSidebar({ role, onRoleSwitch }: AppSidebarProps) {
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild isActive={isActive}>
-                      <NavLink
-                        to={item.url}
-                        end
-                        className="flex items-center gap-2"
-                        activeClassName="bg-accent text-primary font-medium"
-                      >
+                      <NavLink to={item.url} end className="flex items-center gap-2" activeClassName="bg-accent text-primary font-medium">
                         <item.icon className="h-4 w-4 shrink-0" />
                         {!collapsed && <span>{item.title}</span>}
                       </NavLink>
@@ -111,24 +119,36 @@ export function AppSidebar({ role, onRoleSwitch }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter className="p-3">
+        {/* Switch role button — only show if instructor (they can view student dashboard for demo) */}
+        {role === "instructor" && (
+          <button
+            onClick={onRoleSwitch}
+            className={cn(
+              "flex w-full items-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+              collapsed && "justify-center px-0"
+            )}
+          >
+            <Users className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Student View</span>}
+          </button>
+        )}
+
+        {/* Sign out */}
         <button
-          onClick={onRoleSwitch}
+          onClick={handleSignOut}
           className={cn(
             "flex w-full items-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
             collapsed && "justify-center px-0"
           )}
         >
-          <Users className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Switch Role</span>}
+          <LogOut className="h-4 w-4 shrink-0" />
+          {!collapsed && <span>Sign Out</span>}
         </button>
+
         {!collapsed && (
           <div className="mt-2 border-t border-border pt-2">
-            <p className="text-[10px] text-muted-foreground truncate">
-              {role === "instructor" ? "Dr. Sarah Mitchell" : "Marcus Chen"}
-            </p>
-            <p className="text-[10px] text-muted-foreground/60 truncate">
-              Software Engineering 2025
-            </p>
+            <p className="text-[10px] text-muted-foreground truncate">{displayName}</p>
+            <p className="text-[10px] text-muted-foreground/60 truncate">{courseName}</p>
           </div>
         )}
       </SidebarFooter>
