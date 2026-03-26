@@ -14,16 +14,389 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      class_weekly_commits: {
+        Row: {
+          commits: number | null
+          course_id: string
+          id: string
+          lines_added: number | null
+          lines_deleted: number | null
+          week_label: string
+        }
+        Insert: {
+          commits?: number | null
+          course_id: string
+          id?: string
+          lines_added?: number | null
+          lines_deleted?: number | null
+          week_label: string
+        }
+        Update: {
+          commits?: number | null
+          course_id?: string
+          id?: string
+          lines_added?: number | null
+          lines_deleted?: number | null
+          week_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_weekly_commits_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          created_at: string
+          end_date: string | null
+          id: string
+          instructor_name: string
+          name: string
+          start_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          instructor_name: string
+          name: string
+          start_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          instructor_name?: string
+          name?: string
+          start_date?: string | null
+        }
+        Relationships: []
+      }
+      daily_commits: {
+        Row: {
+          commit_count: number | null
+          commit_date: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          commit_count?: number | null
+          commit_date: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          commit_count?: number | null
+          commit_date?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_commits_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          commits_this_week: number | null
+          course_id: string | null
+          created_at: string
+          email: string | null
+          enrolled_date: string | null
+          full_name: string
+          github_url: string | null
+          github_username: string | null
+          id: string
+          last_commit_date: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          total_commits: number | null
+          updated_at: string
+        }
+        Insert: {
+          commits_this_week?: number | null
+          course_id?: string | null
+          created_at?: string
+          email?: string | null
+          enrolled_date?: string | null
+          full_name: string
+          github_url?: string | null
+          github_username?: string | null
+          id: string
+          last_commit_date?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          total_commits?: number | null
+          updated_at?: string
+        }
+        Update: {
+          commits_this_week?: number | null
+          course_id?: string | null
+          created_at?: string
+          email?: string | null
+          enrolled_date?: string | null
+          full_name?: string
+          github_url?: string | null
+          github_username?: string | null
+          id?: string
+          last_commit_date?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          total_commits?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recommendations: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          priority: Database["public"]["Enums"]["recommendation_priority"]
+          student_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["recommendation_priority"]
+          student_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["recommendation_priority"]
+          student_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recommendations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      risk_assessments: {
+        Row: {
+          assessed_at: string
+          created_at: string
+          id: string
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          risk_score: number
+          student_id: string
+        }
+        Insert: {
+          assessed_at?: string
+          created_at?: string
+          id?: string
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          risk_score: number
+          student_id: string
+        }
+        Update: {
+          assessed_at?: string
+          created_at?: string
+          id?: string
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          risk_score?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risk_assessments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_features: {
+        Row: {
+          avg_commit_size_lines_changed: number | null
+          branch_count: number | null
+          code_churn_ratio: number | null
+          commit_frequency_per_day: number | null
+          commit_frequency_per_week: number | null
+          commit_message_quality_score: number | null
+          commit_regularity_score: number | null
+          commits_last_3_days: number | null
+          commits_last_week: number | null
+          course_id: string | null
+          created_at: string
+          days_since_last_commit: number | null
+          files_modified_count: number | null
+          id: string
+          issue_creation_rate: number | null
+          issue_resolution_time: number | null
+          merge_frequency: number | null
+          student_id: string
+          total_commits: number | null
+        }
+        Insert: {
+          avg_commit_size_lines_changed?: number | null
+          branch_count?: number | null
+          code_churn_ratio?: number | null
+          commit_frequency_per_day?: number | null
+          commit_frequency_per_week?: number | null
+          commit_message_quality_score?: number | null
+          commit_regularity_score?: number | null
+          commits_last_3_days?: number | null
+          commits_last_week?: number | null
+          course_id?: string | null
+          created_at?: string
+          days_since_last_commit?: number | null
+          files_modified_count?: number | null
+          id?: string
+          issue_creation_rate?: number | null
+          issue_resolution_time?: number | null
+          merge_frequency?: number | null
+          student_id: string
+          total_commits?: number | null
+        }
+        Update: {
+          avg_commit_size_lines_changed?: number | null
+          branch_count?: number | null
+          code_churn_ratio?: number | null
+          commit_frequency_per_day?: number | null
+          commit_frequency_per_week?: number | null
+          commit_message_quality_score?: number | null
+          commit_regularity_score?: number | null
+          commits_last_3_days?: number | null
+          commits_last_week?: number | null
+          course_id?: string | null
+          created_at?: string
+          days_since_last_commit?: number | null
+          files_modified_count?: number | null
+          id?: string
+          issue_creation_rate?: number | null
+          issue_resolution_time?: number | null
+          merge_frequency?: number | null
+          student_id?: string
+          total_commits?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_features_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_features_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_commits: {
+        Row: {
+          commits: number | null
+          id: string
+          lines_added: number | null
+          lines_deleted: number | null
+          student_id: string
+          week_label: string
+        }
+        Insert: {
+          commits?: number | null
+          id?: string
+          lines_added?: number | null
+          lines_deleted?: number | null
+          student_id: string
+          week_label: string
+        }
+        Update: {
+          commits?: number | null
+          id?: string
+          lines_added?: number | null
+          lines_deleted?: number | null
+          student_id?: string
+          week_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_commits_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_risk_history: {
+        Row: {
+          assessed_at: string
+          id: string
+          risk_score: number
+          student_id: string
+          week_label: string
+        }
+        Insert: {
+          assessed_at?: string
+          id?: string
+          risk_score: number
+          student_id: string
+          week_label: string
+        }
+        Update: {
+          assessed_at?: string
+          id?: string
+          risk_score?: number
+          student_id?: string
+          week_label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_risk_history_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_course_id: { Args: { _user_id: string }; Returns: string }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "instructor" | "student"
+      recommendation_priority: "high" | "medium" | "low"
+      risk_level: "high" | "moderate" | "low"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +523,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["instructor", "student"],
+      recommendation_priority: ["high", "medium", "low"],
+      risk_level: ["high", "moderate", "low"],
+    },
   },
 } as const
