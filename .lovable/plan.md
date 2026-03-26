@@ -1,49 +1,113 @@
 
-## Plan: Create Downloadable Documentation Package
+## Making EarlyWarn Fully Functional with Supabase
 
-The user wants comprehensive downloadable documents covering:
-1. Project documentation (technical overview, architecture, features)
-2. Demo walkthrough (screenshots/guide of what's built)
-3. What remains to make the system fully functional (backend, ML, integrations)
-4. Other relevant materials (setup guide, API spec, etc.)
+### What's Currently Static (needs to become real)
+- All student/course data lives in `mockData.ts` — hardcoded
+- No authentication — anyone can access either role by just clicking
+- The "Switch Role" is a simple React state toggle with no real user identity
+- `StudentDashboard` is hardcoded to `students[0]` (Marcus Chen)
+- `AppLayout` header hardcodes "DS" / "MC" initials
 
-I'll create 3 polished PDF documents using reportlab:
+### Full Plan
 
-**Document 1: Project Documentation** (`earlyWarn_project_documentation.pdf`)
-- System overview, purpose, architecture
-- Current frontend features (pages, components, charts)
-- Data model / mock data schema
-- Design system (colors, components)
-- Tech stack
+---
 
-**Document 2: Demo Guide** (`earlyWarn_demo_guide.pdf`)
-- Step-by-step walkthrough of the UI
-- Page-by-page feature descriptions with what each section shows
-- How to navigate between views
-- What the mock data represents
+#### Phase 1 — Database Schema (migrations)
 
-**Document 3: Remaining Work Roadmap** (`earlyWarn_remaining_work.pdf`)
-- What's built vs what's remaining
-- Backend (Flask/Python) tasks
-- Database setup (PostgreSQL schema)
-- GitHub/GitLab API integration
-- ML pipeline (feature engineering, model training)
-- Authentication (JWT)
-- Deployment considerations
-- Estimated effort per phase
+Create these tables in Supabase:
 
-I'll write a Python script using reportlab to generate all three PDFs, then do QA by converting to images.
+**`courses`** — course info
+- `id`, `name`, `instructor_name`, `start_date`, `end_date`
 
-### Implementation approach
-- Use reportlab with Platypus (SimpleDocTemplate) for structured layout
-- Use consistent branding: dark accent `#38bdf8` (sky blue), risk colors red/amber/green
-- Tables for structured data, proper headings, bullet lists
-- Page headers and footers with page numbers
-- All files saved to `/mnt/documents/`
+**`profiles`** — linked to `auth.users`, stores role
+- `id` (= auth uid), `full_name`, `email`, `role` (enum: `instructor` | `student`), `github_username`, `github_url`, `course_id`
 
-### Files to generate
-- `/mnt/documents/earlyWarn_project_documentation.pdf`
-- `/mnt/documents/earlyWarn_demo_guide.pdf`  
-- `/mnt/documents/earlyWarn_remaining_work.pdf`
+**`student_features`** — the 15 ML features per student
+- `id`, `student_id` (→ profiles), `course_id`, all 15 feature columns
 
-No code changes to the React app are needed — this is a pure document generation task using Python scripts.
+**`risk_assessments`** — risk score + level per student (current + history)
+- `id`, `student_id`, `risk_score`, `risk_level`, `assessed_at`
+
+**`weekly_risk_history`** — 12-week trend per student
+- `id`, `student_id`, `week_label`, `risk_score`, `assessed_at`
+
+**`daily_commits`** — per-day commit count
+- `id`, `student_id`, `commit_date`, `commit_count`
+
+**`weekly_commits`** — per-week aggregate
+- `id`, `student_id`, `week_label`, `commits`, `lines_added`, `lines_deleted`
+
+**`recommendations`** — per-student action items
+- `id`, `student_id`, `priority`, `title`, `description`, `icon`
+
+RLS policies:
+- Instructors can read all rows for their course
+- Students can only read their own rows
+- Uses `profiles.role` to gate access
+
+---
+
+#### Phase 2 — Authentication
+
+Add login/signup page at `/auth`:
+- Email + password sign-in via Supabase Auth
+- On successful login, read `profiles.role` → redirect to `/instructor` or `/student`
+- Protect `/instructor`, `/student`, `/instructor/student/:id` behind auth check
+- `AppLayout` header shows real name + initials from profile
+- `App.tsx` role state driven by `profiles.role` from DB, not client toggle
+
+---
+
+#### Phase 3 — Seed Data
+
+Insert all 12 mock students as real Supabase users + profile rows, plus all their features, risk history, commits, and recommendations. This replaces `mockData.ts` with real DB-backed data via `@supabase/supabase-js` queries.
+
+---
+
+#### Phase 4 — Replace Mock Data with Real Queries (React hooks)
+
+Create `src/hooks/` query hooks using TanStack Query:
+- `useStudents(courseId)` → replaces `students` array
+- `useStudent(id)` → replaces `students.find()`
+- `useCourse(id)` → replaces `course` object
+- `useCurrentStudentProfile()` → replaces `currentStudent` (reads from auth session)
+- `useClassAverageFeatures(courseId)` → computed from `student_features`
+
+Update all pages:
+- `InstructorDashboard` → `useStudents()` + `useCourse()`
+- `StudentProfile` → `useStudent(id)` with `useParams`
+- `StudentDashboard` → `useCurrentStudentProfile()` (real logged-in student)
+- `Index` → `useStudents()` for stats (or read from courses table)
+
+---
+
+#### Phase 5 — UI wiring
+
+- `AppLayout` header: show real user name/initials from auth session + profile
+- `Sidebar` footer: show real `profiles.full_name` and role
+- Remove all imports of `mockData.ts` from pages (keep types only)
+- Add loading skeletons while queries are fetching
+- Add error states for failed queries
+
+---
+
+### Files to create/edit
+
+| Action | File |
+|---|---|
+| New migration | `supabase/migrations/` — full schema |
+| Edit | `src/App.tsx` — auth state, protected routes |
+| New | `src/pages/Auth.tsx` — login/signup page |
+| New | `src/hooks/useStudents.ts` |
+| New | `src/hooks/useStudent.ts` |
+| New | `src/hooks/useCourse.ts` |
+| New | `src/hooks/useCurrentStudent.ts` |
+| Edit | `src/pages/InstructorDashboard.tsx` |
+| Edit | `src/pages/StudentProfile.tsx` |
+| Edit | `src/pages/StudentDashboard.tsx` |
+| Edit | `src/pages/Index.tsx` |
+| Edit | `src/components/layout/AppLayout.tsx` |
+| Edit | `src/components/layout/Sidebar.tsx` |
+| New | `src/components/auth/AuthGuard.tsx` |
+
+The `mockData.ts` types stay (reused by hooks), but the data exports are replaced by DB queries.
