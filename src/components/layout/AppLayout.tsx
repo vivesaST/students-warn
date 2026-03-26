@@ -1,8 +1,10 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import type { Session } from "@supabase/supabase-js";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./Sidebar";
 import { ChevronRight } from "lucide-react";
+import { useProfile } from "@/hooks/useProfile";
 
 interface BreadcrumbItem {
   label: string;
@@ -12,17 +14,24 @@ interface BreadcrumbItem {
 interface AppLayoutProps {
   children: ReactNode;
   role: "instructor" | "student";
+  session: Session | null;
   onRoleSwitch: () => void;
   breadcrumbs?: BreadcrumbItem[];
 }
 
-export function AppLayout({ children, role, onRoleSwitch, breadcrumbs }: AppLayoutProps) {
+export function AppLayout({ children, role, session, onRoleSwitch, breadcrumbs }: AppLayoutProps) {
   const navigate = useNavigate();
+  const { data: profile } = useProfile(session?.user?.id);
+
+  const displayRole = profile?.role ?? role;
+  const initials = profile?.full_name
+    ? profile.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : displayRole === "instructor" ? "DS" : "MC";
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar role={role} onRoleSwitch={onRoleSwitch} />
+        <AppSidebar role={displayRole} session={session} onRoleSwitch={onRoleSwitch} />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}
@@ -51,10 +60,10 @@ export function AppLayout({ children, role, onRoleSwitch, breadcrumbs }: AppLayo
 
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-muted-foreground hidden sm:block">
-                Software Engineering 2025
+                {profile?.course_id ? "Software Engineering 2025" : "Software Engineering 2025"}
               </span>
               <div className="h-7 w-7 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                {role === "instructor" ? "DS" : "MC"}
+                {initials}
               </div>
             </div>
           </header>
