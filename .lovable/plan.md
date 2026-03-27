@@ -1,113 +1,87 @@
 
-## Making EarlyWarn Fully Functional with Supabase
 
-### What's Currently Static (needs to become real)
-- All student/course data lives in `mockData.ts` — hardcoded
-- No authentication — anyone can access either role by just clicking
-- The "Switch Role" is a simple React state toggle with no real user identity
-- `StudentDashboard` is hardcoded to `students[0]` (Marcus Chen)
-- `AppLayout` header hardcodes "DS" / "MC" initials
+## GitHub API Integration for Real Student Data
 
-### Full Plan
+### How it works
 
----
+Students sign up and enter their GitHub username + repository URL in their profile. A scheduled Edge Function runs daily (via `pg_cron`), fetches each student's commit data from the GitHub REST API, and updates the database tables. The instructor sees fresh data on their dashboard without any manual work.
 
-#### Phase 1 — Database Schema (migrations)
+```text
+┌──────────┐     ┌──────────────────┐     ┌────────────┐     ┌──────────┐
+│ Students │────▶│ profiles table   │────▶│ Edge Func  │────▶│ GitHub   │
+│ (signup) │     │ github_username  │     │ (scheduled)│     │ REST API │
+└──────────┘     │ github_url       │     └─────┬──────┘     └──────────┘
+                 └──────────────────┘           │
+                                                ▼
+                                    ┌───────────────────────┐
+                                    │ daily_commits          │
+                                    │ weekly_commits         │
+                                    │ student_features       │
+                                    │ risk_assessments       │
+                                    │ weekly_risk_history    │
+                                    │ recommendations        │
+                                    └───────────────────────┘
+```
 
-Create these tables in Supabase:
+### Step 1 — Store a GitHub Personal Access Token (secret)
 
-**`courses`** — course info
-- `id`, `name`, `instructor_name`, `start_date`, `end_date`
+A single GitHub PAT (with `repo` read scope) is stored as a Supabase secret `GITHUB_PAT`. This token is used by the Edge Function to call the GitHub API (avoids the 60 req/hr unauthenticated limit, gets 5,000 req/hr instead).
 
-**`profiles`** — linked to `auth.users`, stores role
-- `id` (= auth uid), `full_name`, `email`, `role` (enum: `instructor` | `student`), `github_username`, `github_url`, `course_id`
+### Step 2 — Create `sync-github-data` Edge Function
 
-**`student_features`** — the 15 ML features per student
-- `id`, `student_id` (→ profiles), `course_id`, all 15 feature columns
+This function:
+1. Queries `profiles` for all students with a `github_username`
+2. For each student, calls GitHub's REST API:
+   - `GET /users/{username}/events` — recent push events
+   - `GET /repos/{owner}/{repo}/commits` — commit history with stats
+   - `GET /repos/{owner}/{repo}/branches` — branch count
+   - `GET /repos/{owner}/{repo}/issues` — issue tracking
+3. Computes the 15 behavioral features from raw API data (commit frequency, regularity, churn, etc.)
+4. Upserts into `daily_commits`, `weekly_commits`, `student_features`, and `profiles` (updating `total_commits`, `commits_this_week`, `last_commit_date`)
+5. Runs a simple risk scoring formula on the features to produce `risk_score` + `risk_level`, inserts into `risk_assessments` and `weekly_risk_history`
+6. Generates recommendations based on feature thresholds (same logic as current mock data)
 
-**`risk_assessments`** — risk score + level per student (current + history)
-- `id`, `student_id`, `risk_score`, `risk_level`, `assessed_at`
+### Step 3 — Schedule with `pg_cron`
 
-**`weekly_risk_history`** — 12-week trend per student
-- `id`, `student_id`, `week_label`, `risk_score`, `assessed_at`
+A cron job calls the Edge Function once daily (e.g., 2 AM UTC):
+```sql
+SELECT cron.schedule('sync-github-daily', '0 2 * * *', $$
+  SELECT net.http_post(
+    url := 'https://antbykdmufaooxsnzsbv.supabase.co/functions/v1/sync-github-data',
+    headers := '{"Authorization": "Bearer <anon_key>"}'::jsonb,
+    body := '{}'::jsonb
+  );
+$$);
+```
 
-**`daily_commits`** — per-day commit count
-- `id`, `student_id`, `commit_date`, `commit_count`
+### Step 4 — Add "Sync Now" button for instructor
 
-**`weekly_commits`** — per-week aggregate
-- `id`, `student_id`, `week_label`, `commits`, `lines_added`, `lines_deleted`
+Add a button on the Instructor Dashboard that manually triggers the Edge Function so the instructor can refresh data on-demand without waiting for the daily cron.
 
-**`recommendations`** — per-student action items
-- `id`, `student_id`, `priority`, `title`, `description`, `icon`
+### Step 5 — Student profile: GitHub field
 
-RLS policies:
-- Instructors can read all rows for their course
-- Students can only read their own rows
-- Uses `profiles.role` to gate access
-
----
-
-#### Phase 2 — Authentication
-
-Add login/signup page at `/auth`:
-- Email + password sign-in via Supabase Auth
-- On successful login, read `profiles.role` → redirect to `/instructor` or `/student`
-- Protect `/instructor`, `/student`, `/instructor/student/:id` behind auth check
-- `AppLayout` header shows real name + initials from profile
-- `App.tsx` role state driven by `profiles.role` from DB, not client toggle
-
----
-
-#### Phase 3 — Seed Data
-
-Insert all 12 mock students as real Supabase users + profile rows, plus all their features, risk history, commits, and recommendations. This replaces `mockData.ts` with real DB-backed data via `@supabase/supabase-js` queries.
-
----
-
-#### Phase 4 — Replace Mock Data with Real Queries (React hooks)
-
-Create `src/hooks/` query hooks using TanStack Query:
-- `useStudents(courseId)` → replaces `students` array
-- `useStudent(id)` → replaces `students.find()`
-- `useCourse(id)` → replaces `course` object
-- `useCurrentStudentProfile()` → replaces `currentStudent` (reads from auth session)
-- `useClassAverageFeatures(courseId)` → computed from `student_features`
-
-Update all pages:
-- `InstructorDashboard` → `useStudents()` + `useCourse()`
-- `StudentProfile` → `useStudent(id)` with `useParams`
-- `StudentDashboard` → `useCurrentStudentProfile()` (real logged-in student)
-- `Index` → `useStudents()` for stats (or read from courses table)
-
----
-
-#### Phase 5 — UI wiring
-
-- `AppLayout` header: show real user name/initials from auth session + profile
-- `Sidebar` footer: show real `profiles.full_name` and role
-- Remove all imports of `mockData.ts` from pages (keep types only)
-- Add loading skeletons while queries are fetching
-- Add error states for failed queries
-
----
+On signup or in the Student Dashboard, students enter/update their `github_username` and `github_url` (repo link). The profile page gets an edit form for these fields.
 
 ### Files to create/edit
 
 | Action | File |
 |---|---|
-| New migration | `supabase/migrations/` — full schema |
-| Edit | `src/App.tsx` — auth state, protected routes |
-| New | `src/pages/Auth.tsx` — login/signup page |
-| New | `src/hooks/useStudents.ts` |
-| New | `src/hooks/useStudent.ts` |
-| New | `src/hooks/useCourse.ts` |
-| New | `src/hooks/useCurrentStudent.ts` |
-| Edit | `src/pages/InstructorDashboard.tsx` |
-| Edit | `src/pages/StudentProfile.tsx` |
-| Edit | `src/pages/StudentDashboard.tsx` |
-| Edit | `src/pages/Index.tsx` |
-| Edit | `src/components/layout/AppLayout.tsx` |
-| Edit | `src/components/layout/Sidebar.tsx` |
-| New | `src/components/auth/AuthGuard.tsx` |
+| New | `supabase/functions/sync-github-data/index.ts` — main sync logic |
+| SQL insert | `pg_cron` schedule (via SQL editor, not migration) |
+| Edit | `src/pages/InstructorDashboard.tsx` — add "Sync Now" button |
+| Edit | `src/pages/StudentDashboard.tsx` — add GitHub username/repo edit form |
+| Secret | `GITHUB_PAT` — added via Supabase secrets |
 
-The `mockData.ts` types stay (reused by hooks), but the data exports are replaced by DB queries.
+### Risk scoring formula (built into the Edge Function)
+
+Uses the same thresholds from the mock data to compute risk:
+- High weight: `days_since_last_commit`, `commit_regularity_score`, `commits_last_week`
+- Medium weight: `commit_frequency_per_day`, `code_churn_ratio`, `commit_message_quality_score`
+- Low weight: `branch_count`, `merge_frequency`, `issue_creation_rate`
+
+Score 0-100 where higher = more at risk. Thresholds: 0-39 = low, 40-64 = moderate, 65-100 = high.
+
+### What the user needs to provide
+
+A GitHub Personal Access Token (classic) with `repo` read access. This will be stored as a Supabase secret.
+
