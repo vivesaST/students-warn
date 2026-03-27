@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RiskBadge } from "@/components/dashboard/RiskBadge";
@@ -8,7 +9,11 @@ import { RecommendationsPanel } from "@/components/dashboard/RecommendationsPane
 import { useProfile } from "@/hooks/useProfile";
 import { useStudent } from "@/hooks/useStudent";
 import { useClassAverageFeatures } from "@/hooks/useClassData";
-import { ArrowUp, ArrowDown, Minus, Github, ExternalLink, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ArrowUp, ArrowDown, Minus, Github, ExternalLink, TrendingUp, TrendingDown, Loader2, Pencil, Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StudentDashboardProps {
