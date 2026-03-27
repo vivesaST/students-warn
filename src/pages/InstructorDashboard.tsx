@@ -65,15 +65,15 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
     >
       <div className="space-y-6 max-w-7xl mx-auto">
         {/* Header */}
-        <div>
-          <h1 className="text-xl font-bold text-foreground">
-            {course?.name ?? "Software Engineering 2025"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Instructor: {course?.instructorName ?? "Dr. Sarah Mitchell"} · {course?.startDate} → {course?.endDate}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">
+              {course?.name ?? "Software Engineering 2025"}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Instructor: {course?.instructorName ?? "Dr. Sarah Mitchell"} · {course?.startDate} → {course?.endDate}
+            </p>
+          </div>
           <Button
             variant="outline"
             size="sm"
