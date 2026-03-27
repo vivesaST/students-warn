@@ -71,6 +71,18 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
             Instructor: {course?.instructorName ?? "Dr. Sarah Mitchell"} · {course?.startDate} → {course?.endDate}
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => sync()}
+            disabled={isSyncing}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+            {isSyncing ? "Syncing…" : "Sync GitHub"}
+          </Button>
+        </div>
 
         {studentsLoading ? (
           <div className="flex items-center justify-center py-20">
