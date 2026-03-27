@@ -144,17 +144,43 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
                 <RiskBadge level={student.riskLevel} score={student.riskScore} showScore size="lg" />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-xl">{riskDescription}</p>
-              <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <Github className="h-3.5 w-3.5" />
-                  <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
-                    @{student.githubUsername} <ExternalLink className="h-2.5 w-2.5" />
-                  </a>
+              {editingGithub ? (
+                <div className="flex flex-wrap items-end gap-2 mt-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground uppercase">GitHub Username</label>
+                    <Input value={ghUsername} onChange={(e) => setGhUsername(e.target.value)} placeholder="octocat" className="h-8 text-xs w-40" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-muted-foreground uppercase">Repository URL</label>
+                    <Input value={ghUrl} onChange={(e) => setGhUrl(e.target.value)} placeholder="https://github.com/user/repo" className="h-8 text-xs w-64" />
+                  </div>
+                  <Button size="sm" variant="default" onClick={saveGithub} disabled={saving} className="h-8 gap-1">
+                    <Check className="h-3 w-3" /> Save
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setEditingGithub(false)} className="h-8 gap-1">
+                    <X className="h-3 w-3" /> Cancel
+                  </Button>
                 </div>
-                <span>Total commits: <strong className="text-foreground">{student.totalCommits}</strong></span>
-                <span>This week: <strong className="text-foreground">{student.commitsThisWeek}</strong></span>
-                <span>Last commit: <strong className="text-foreground">{student.lastCommitDate}</strong></span>
-              </div>
+              ) : (
+                <div className="flex flex-wrap gap-4 mt-3 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <Github className="h-3.5 w-3.5" />
+                    {student.githubUsername ? (
+                      <a href={student.githubUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                        @{student.githubUsername} <ExternalLink className="h-2.5 w-2.5" />
+                      </a>
+                    ) : (
+                      <span className="text-muted-foreground italic">Not set</span>
+                    )}
+                    <button onClick={startEditGithub} className="text-muted-foreground hover:text-foreground ml-1">
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                  </div>
+                  <span>Total commits: <strong className="text-foreground">{student.totalCommits}</strong></span>
+                  <span>This week: <strong className="text-foreground">{student.commitsThisWeek}</strong></span>
+                  <span>Last commit: <strong className="text-foreground">{student.lastCommitDate}</strong></span>
+                </div>
+              )}
             </div>
             <div className="text-center shrink-0">
               <div className={cn(
