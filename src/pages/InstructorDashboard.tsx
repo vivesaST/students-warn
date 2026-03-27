@@ -1,6 +1,8 @@
-import { AlertTriangle as AT, Users as U, GitCommit as GC, TrendingUp as TU, Loader2 } from "lucide-react";
+import { AlertTriangle as AT, Users as U, GitCommit as GC, TrendingUp as TU, Loader2, RefreshCw } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Button } from "@/components/ui/button";
+import { useSyncGithub } from "@/hooks/useSyncGithub";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { RiskDonutChart } from "@/components/dashboard/RiskDonutChart";
 import { CommitTimelineChart } from "@/components/dashboard/CommitTimelineChart";
