@@ -20,6 +20,7 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
   const { data: studentRows = [], isLoading: studentsLoading } = useStudents(profile?.course_id);
   const { data: course } = useCourse(profile?.course_id);
   const { data: classWeeklyCommits = [] } = useClassWeeklyCommits(profile?.course_id);
+  const { sync, isSyncing } = useSyncGithub();
 
   async function handleRoleSwitch() {
     // Instructors can navigate to student view for demo
