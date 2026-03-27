@@ -57,9 +57,38 @@ function CompareBar({ studentVal, avgVal, higherIsBetter, unit }: { studentVal: 
 }
 
 export default function StudentDashboard({ session }: StudentDashboardProps) {
-  const { data: profile } = useProfile(session?.user?.id);
+  const { data: profile, refetch: refetchProfile } = useProfile(session?.user?.id);
   const { data: student, isLoading } = useStudent(profile?.id);
   const { data: classAverageFeatures } = useClassAverageFeatures(profile?.course_id);
+  const { toast } = useToast();
+
+  const [editingGithub, setEditingGithub] = useState(false);
+  const [ghUsername, setGhUsername] = useState("");
+  const [ghUrl, setGhUrl] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  function startEditGithub() {
+    setGhUsername(profile?.github_username ?? "");
+    setGhUrl(profile?.github_url ?? "");
+    setEditingGithub(true);
+  }
+
+  async function saveGithub() {
+    if (!session?.user?.id) return;
+    setSaving(true);
+    const { error } = await supabase.from("profiles").update({
+      github_username: ghUsername.trim(),
+      github_url: ghUrl.trim(),
+    }).eq("id", session.user.id);
+    setSaving(false);
+    if (error) {
+      toast({ title: "Failed to update", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "GitHub info updated" });
+      setEditingGithub(false);
+      refetchProfile();
+    }
+  }
 
   async function handleRoleSwitch() {
     window.location.href = "/instructor";
