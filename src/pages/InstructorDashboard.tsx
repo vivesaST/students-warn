@@ -1,6 +1,8 @@
-import { AlertTriangle as AT, Users as U, GitCommit as GC, TrendingUp as TU, Loader2 } from "lucide-react";
+import { AlertTriangle as AT, Users as U, GitCommit as GC, TrendingUp as TU, Loader2, RefreshCw } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Button } from "@/components/ui/button";
+import { useSyncGithub } from "@/hooks/useSyncGithub";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { RiskDonutChart } from "@/components/dashboard/RiskDonutChart";
 import { CommitTimelineChart } from "@/components/dashboard/CommitTimelineChart";
@@ -20,6 +22,7 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
   const { data: studentRows = [], isLoading: studentsLoading } = useStudents(profile?.course_id);
   const { data: course } = useCourse(profile?.course_id);
   const { data: classWeeklyCommits = [] } = useClassWeeklyCommits(profile?.course_id);
+  const { sync, isSyncing } = useSyncGithub();
 
   async function handleRoleSwitch() {
     // Instructors can navigate to student view for demo
@@ -62,13 +65,25 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
     >
       <div className="space-y-6 max-w-7xl mx-auto">
         {/* Header */}
-        <div>
-          <h1 className="text-xl font-bold text-foreground">
-            {course?.name ?? "Software Engineering 2025"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Instructor: {course?.instructorName ?? "Dr. Sarah Mitchell"} · {course?.startDate} → {course?.endDate}
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-foreground">
+              {course?.name ?? "Software Engineering 2025"}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Instructor: {course?.instructorName ?? "Dr. Sarah Mitchell"} · {course?.startDate} → {course?.endDate}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => sync()}
+            disabled={isSyncing}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+            {isSyncing ? "Syncing…" : "Sync GitHub"}
+          </Button>
         </div>
 
         {studentsLoading ? (
