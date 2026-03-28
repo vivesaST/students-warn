@@ -27,12 +27,21 @@ export default function Auth() {
         if (signInError) throw signInError;
         // Navigation is handled by App.tsx auth state listener
       } else {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (signUpError) throw signUpError;
+        // Create profile row for the new user
+        if (signUpData.user) {
+          await supabase.from("profiles").upsert({
+            id: signUpData.user.id,
+            full_name: fullName.trim() || email.split("@")[0],
+            email,
+            role: "student" as const,
+          });
+        }
         setError("Check your email for a confirmation link!");
       }
     } catch (err: unknown) {
