@@ -77,6 +77,20 @@ export default function Auth() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="fullName" className="text-xs">Full Name</Label>
+                <Input
+                  id="fullName"
+                  type="text"
+                  placeholder="Jane Doe"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  className="h-9 text-sm"
+                />
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs">Email</Label>
               <Input

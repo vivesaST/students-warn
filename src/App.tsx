@@ -62,6 +62,22 @@ export default function App() {
               }
             />
             <Route
+              path="/instructor/students"
+              element={
+                <AuthGuard session={session} loading={loading}>
+                  <InstructorStudents session={session} />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/instructor/analytics"
+              element={
+                <AuthGuard session={session} loading={loading}>
+                  <InstructorAnalytics session={session} />
+                </AuthGuard>
+              }
+            />
+            <Route
               path="/instructor/student/:id"
               element={
                 <AuthGuard session={session} loading={loading}>
