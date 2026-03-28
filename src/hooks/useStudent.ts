@@ -10,8 +10,8 @@ export function useStudent(studentId: string | undefined) {
 
       const [profileRes, featuresRes, riskRes, weeklyRiskRes, dailyCommitsRes, weeklyCommitsRes, recsRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", studentId).single(),
-        supabase.from("student_features").select("*").eq("student_id", studentId).single(),
-        supabase.from("risk_assessments").select("*").eq("student_id", studentId).order("assessed_at", { ascending: false }).limit(1).single(),
+        supabase.from("student_features").select("*").eq("student_id", studentId).maybeSingle(),
+        supabase.from("risk_assessments").select("*").eq("student_id", studentId).order("assessed_at", { ascending: false }).limit(1).maybeSingle(),
         supabase.from("weekly_risk_history").select("*").eq("student_id", studentId).order("assessed_at", { ascending: true }),
         supabase.from("daily_commits").select("*").eq("student_id", studentId).order("commit_date", { ascending: true }),
         supabase.from("weekly_commits").select("*").eq("student_id", studentId),

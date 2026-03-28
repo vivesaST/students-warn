@@ -10,6 +10,8 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import Auth from "./pages/Auth.tsx";
 import Index from "./pages/Index.tsx";
 import InstructorDashboard from "./pages/InstructorDashboard.tsx";
+import InstructorStudents from "./pages/InstructorStudents.tsx";
+import InstructorAnalytics from "./pages/InstructorAnalytics.tsx";
 import StudentProfile from "./pages/StudentProfile.tsx";
 import StudentDashboard from "./pages/StudentDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -56,6 +58,22 @@ export default function App() {
               element={
                 <AuthGuard session={session} loading={loading}>
                   <InstructorDashboard session={session} />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/instructor/students"
+              element={
+                <AuthGuard session={session} loading={loading}>
+                  <InstructorStudents session={session} />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/instructor/analytics"
+              element={
+                <AuthGuard session={session} loading={loading}>
+                  <InstructorAnalytics session={session} />
                 </AuthGuard>
               }
             />

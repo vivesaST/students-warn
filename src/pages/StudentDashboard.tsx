@@ -94,11 +94,39 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
     window.location.href = "/instructor";
   }
 
-  if (isLoading || !student) {
+  if (isLoading) {
     return (
       <AppLayout role="student" session={session} onRoleSwitch={handleRoleSwitch} breadcrumbs={[{ label: "My Dashboard" }]}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!student) {
+    return (
+      <AppLayout role="student" session={session} onRoleSwitch={handleRoleSwitch} breadcrumbs={[{ label: "My Dashboard" }]}>
+        <div className="max-w-lg mx-auto mt-16 space-y-6">
+          <div className="rounded-xl border border-border bg-card p-6 text-center space-y-4">
+            <Github className="h-10 w-10 mx-auto text-muted-foreground" />
+            <h2 className="text-lg font-bold text-foreground">Link Your GitHub to Get Started</h2>
+            <p className="text-sm text-muted-foreground">Add your GitHub username and repository URL so EarlyWarn can analyze your progress.</p>
+            <div className="space-y-3 text-left">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground uppercase">GitHub Username</label>
+                <Input value={ghUsername} onChange={(e) => setGhUsername(e.target.value)} placeholder="octocat" className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground uppercase">Repository URL</label>
+                <Input value={ghUrl} onChange={(e) => setGhUrl(e.target.value)} placeholder="https://github.com/user/repo" className="h-9 text-sm" />
+              </div>
+              <Button onClick={saveGithub} disabled={saving || !ghUsername.trim()} className="w-full gap-2">
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Save GitHub Info
+              </Button>
+            </div>
+          </div>
         </div>
       </AppLayout>
     );

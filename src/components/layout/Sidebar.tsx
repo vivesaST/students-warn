@@ -27,8 +27,8 @@ interface AppSidebarProps {
 
 const instructorNav = [
   { title: "Dashboard", url: "/instructor", icon: Home },
-  { title: "Students", url: "/instructor", icon: Users },
-  { title: "Analytics", url: "/instructor", icon: BarChart2 },
+  { title: "Students", url: "/instructor/students", icon: Users },
+  { title: "Analytics", url: "/instructor/analytics", icon: BarChart2 },
 ];
 
 const studentNav = [
