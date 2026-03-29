@@ -1,46 +1,37 @@
 
 
-## Fix: Student GitHub Form Access, Empty Pages, and Profile Creation
+## Generate EarlyWarn Documentation Package (DOCX + PPTX)
 
-### Problems Identified
+Two downloadable files covering the full platform overview and student user guide.
 
-1. **Student Dashboard stuck on loading** — `useStudent` hook calls `.single()` on `student_features` and `risk_assessments`, which throws an error when no rows exist yet. The `if (isLoading || !student)` guard at line 97 blocks the entire page, including the GitHub form.
+### Document 1: DOCX -- "EarlyWarn Platform Guide"
 
-2. **No profile created on signup** — `Auth.tsx` calls `supabase.auth.signUp()` but never inserts a row into `profiles`. New users get no profile, so all hooks return null.
+**Sections:**
+1. **What is EarlyWarn?** -- Early warning system for software engineering courses that monitors GitHub activity to predict project failure risk
+2. **Why it Matters** -- Students fall behind silently; instructors can't monitor 50-200+ students manually; early intervention prevents failure
+3. **How it Works** -- Students link GitHub, system syncs commits/branches/issues, computes 15 behavioral metrics, calculates risk score (0-100), generates recommendations
+4. **The 15 Tracked Metrics** -- Table listing: commit frequency, regularity score, days since last commit, code churn ratio, branch count, merge frequency, commit message quality, lines added/deleted, avg commit size, issue creation rate, etc.
+5. **Risk Score Explained** -- How the 0-100 score is computed (high-weight: inactivity + regularity + weekly commits; medium: frequency + churn + message quality; low: branches + merges + issues); thresholds for Low/Moderate/High
+6. **Student Guide** -- Step-by-step: sign up, enter full name/email/password, link GitHub username + repo URL, view dashboard (risk banner, metrics vs class average, radar chart, risk trend, commit timeline, contributing factors, recommendations)
+7. **Instructor Guide** -- Overview dashboard with KPIs, risk donut chart, commit timeline, student table with search/filter/sort, individual student profiles, Sync GitHub button, analytics page
+8. **AI Recommendations** -- How the system generates personalized action items based on metric thresholds
 
-3. **Students and Analytics sidebar links are dead** — Both point to `/instructor` (same as Dashboard). There are no separate `/instructor/students` or `/instructor/analytics` routes.
+### Document 2: PPTX -- "EarlyWarn Overview" (8-10 slides)
 
-### Plan
+1. **Title slide** -- "EarlyWarn: Student Risk Detection System" with tagline
+2. **The Problem** -- Students fall behind silently, instructors can't track everyone, failures are preventable
+3. **How EarlyWarn Works** -- 3-step flow: Link GitHub -> Analyze Metrics -> Get Insights
+4. **15 Behavioral Metrics** -- Grid/icons showing the key tracked features
+5. **Risk Scoring** -- Visual of 0-100 scale with Low/Moderate/High zones
+6. **Student Dashboard** -- Description of what students see (risk banner, comparisons, recommendations)
+7. **Instructor Dashboard** -- KPIs, charts, student table overview
+8. **AI Recommendations** -- Example recommendations with priority levels
+9. **Getting Started** -- Step-by-step for students to begin
 
-**File 1: `src/hooks/useStudent.ts`** — Make resilient to missing data
-- Change `.single()` calls on `student_features` and `risk_assessments` to `.maybeSingle()` so they return `null` instead of throwing when no rows exist
-- This allows the Student Dashboard to render even before the first GitHub sync
+### Technical Approach
 
-**File 2: `src/pages/StudentDashboard.tsx`** — Show GitHub form when no data exists
-- Change the loading guard: if `profile` exists but `student` is null (no features yet), render the GitHub form and a message like "Link your GitHub to get started" instead of an infinite spinner
-- Keep the loading spinner only for `isLoading === true`
-
-**File 3: `src/pages/Auth.tsx`** — Create profile on signup
-- After successful `signUp`, insert a profile row with `id = user.id`, `full_name` (derived from email or a new name field), `email`, and `role = 'student'`
-- Add a "Full Name" input field to the signup form
-
-**File 4: `src/pages/InstructorStudents.tsx`** (new) — Dedicated students list page
-- Extract the `StudentTable` section from `InstructorDashboard` into its own page at route `/instructor/students`
-- Full-page view with search, filters, and the student table
-
-**File 5: `src/pages/InstructorAnalytics.tsx`** (new) — Dedicated analytics page
-- Show the `RiskDonutChart`, `CommitTimelineChart`, and risk trend data in a full analytics layout at `/instructor/analytics`
-
-**File 6: `src/App.tsx`** — Add new routes
-- Add `/instructor/students` and `/instructor/analytics` routes
-
-**File 7: `src/components/layout/Sidebar.tsx`** — Fix nav URLs
-- Change Students link from `/instructor` to `/instructor/students`
-- Change Analytics link from `/instructor` to `/instructor/analytics`
-
-### Technical Details
-
-- `maybeSingle()` returns `{ data: null, error: null }` when no row is found, unlike `single()` which throws a `PGRST116` error
-- The signup profile insert uses the authenticated user's ID from the signup response
-- New pages reuse existing hooks (`useStudents`, `useClassWeeklyCommits`, `useProfile`, `useCourse`)
+- DOCX: Generate using `docx` npm library with proper styles, headings, tables, and bullet lists
+- PPTX: Generate using `pptxgenjs` with a bold color palette (Midnight Executive: navy `1E2761`, ice blue `CADCFC`, white) and Georgia/Calibri font pairing
+- Both output to `/mnt/documents/`
+- QA: Convert both to images, inspect every page/slide before delivery
 
