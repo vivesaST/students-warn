@@ -1,44 +1,47 @@
 
 
-## Plan: Generate Defense Presentation (PPTX) for EarlyWarn Project
+## Plan: Generate Chapter 3 DOCX — System Design and Methodology
 
-This will create a downloadable `.pptx` file with 20 slides covering all requested sections, using bold headers and 23pt body text.
+Create an 18-page academic DOCX document for Chapter 3 of the EarlyWarn project, with embedded Mermaid-to-image diagrams.
 
-### Design
-- **Palette**: Midnight Executive — Navy (`1E2761`), Ice Blue (`CADCFC`), White (`FFFFFF`), Accent Gold (`F9C846`)
-- **Headers**: 36-44pt, bold, white on dark backgrounds
-- **Body text**: 23pt as requested
-- **Font**: Arial throughout
+### Content Sections (mapped to the codebase)
 
-### Slides (20 total)
+| Section | Source |
+|---------|--------|
+| 3.1 System Overview & Justification | App.tsx routes, project purpose |
+| 3.2 Requirements | DB schema (profiles, student_features, risk_assessments), AuthGuard, RLS policies |
+| 3.3 Methodology | Agile/Scrum framing for the project |
+| 3.4 Architecture | 3-tier: React frontend, Supabase Edge Functions, PostgreSQL. Includes high-level diagram, component descriptions, logical design diagram |
+| 3.5 Languages & Tools | React 18, TypeScript 5, Vite 5, Tailwind CSS, Supabase, Recharts, TanStack Query, Deno |
+| 3.6 Database Design | ER diagram from actual schema (8 tables: profiles, courses, student_features, risk_assessments, daily_commits, weekly_commits, weekly_risk_history, recommendations, class_weekly_commits), indexes |
+| 3.7 Software Modules | Auth module (AuthGuard + Supabase Auth), Data Collection (sync-github-data edge function), Feature Engineering (15 metrics computed in edge function), ML Module (risk scoring algorithm) |
+| 3.8 Security | RLS policies, SECURITY DEFINER functions, JWT auth, service_role separation |
+| 3.9 Summary | Chapter wrap-up |
 
-1. **Title** — "EarlyWarn: Student Risk Detection System" + subtitle "Project Defense Presentation"
-2. **Introduction** — Overview of the platform
-3. **Problem Statement** — Students fail silently, no early warning
-4. **Aim and Objectives** — Primary aim + 4-5 objectives
-5. **Significance of the Study** — Why this matters
-6. **Scope of the Study** — What the system covers
-7. **Limitation of the Study** — Known constraints
-8. **Literature Review** — Summary of related work
-9. **Literature Review (Table)** — Tabular comparison of existing systems
-10. **Research Gap** — What existing systems miss
-11. **Methodology** — Approach taken (agile, data pipeline, scoring)
-12. **System Architecture** — Text description of architecture layers
-13. **System Architecture Diagram** — Built-in chart/visual showing components
-14. **Logical Design Diagram** — Data flow description
-15. **Class Diagram** — Key entities and relationships
-16. **Technology Used** — React, Supabase, TypeScript, Recharts, etc.
-17. **Key Features** — 15 metrics, risk scoring, dashboards, GitHub sync
-18. **Expected Outcome** — What the system delivers
-19. **Timeline** — Project phases with dates
-20. **Conclusion** — Summary and future work
+### Diagrams (generated as PNG via Mermaid CLI)
 
-### Implementation
-- Single Node.js script using `pptxgenjs`
-- Output to `/mnt/documents/EarlyWarn_Defense_Presentation.pptx`
-- QA via LibreOffice PDF conversion + image inspection
+1. **High-Level Architecture Diagram** (Section 3.4.1) — 3-tier showing Browser, Supabase Edge Functions, PostgreSQL
+2. **Logical Design / Data Flow Diagram** (Section 3.4.3) — GitHub API to Feature Extraction to Risk Scoring to Dashboard
+3. **Entity-Relationship Diagram** (Section 3.6.1) — All 9 tables with relationships
+4. **Component Diagram** (Section 3.7) — Auth, Data Collection, Feature Engineering, Risk Scoring modules
 
-### Files
-- `/tmp/gen_defense.js` — generation script (ephemeral)
-- `/mnt/documents/EarlyWarn_Defense_Presentation.pptx` — final output
+### Formatting
+
+- **Font**: Times New Roman (academic standard)
+- **Headings**: Bold, 14pt for chapter title, 13pt for major sections, 12pt for subsections
+- **Body text**: 12pt, 1.5 line spacing, justified
+- **Page size**: A4 with 1-inch margins
+- **Target**: 18 pages
+
+### Implementation Steps
+
+1. Install dependencies (`docx`, `@mermaid-js/mermaid-cli` or use mermaid-js via puppeteer)
+2. Generate 4 diagram PNGs from Mermaid definitions
+3. Build the DOCX with `docx` npm package, embedding diagram images
+4. Output to `/mnt/documents/EarlyWarn_Chapter3_System_Design.docx`
+5. Convert to PDF for visual QA, inspect all pages
+
+### Output
+
+- `/mnt/documents/EarlyWarn_Chapter3_System_Design.docx`
 
