@@ -24,18 +24,12 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
   const { data: classWeeklyCommits = [] } = useClassWeeklyCommits(profile?.course_id);
   const { sync, isSyncing } = useSyncGithub();
 
-  async function handleRoleSwitch() {
-    // Instructors can navigate to student view for demo
-    window.location.href = "/student";
-  }
-
   const highRisk = studentRows.filter((s) => s.riskLevel === "high").length;
   const moderateRisk = studentRows.filter((s) => s.riskLevel === "moderate").length;
   const avgCommitsThisWeek = studentRows.length > 0
     ? Math.round(studentRows.reduce((sum, s) => sum + s.commits_this_week, 0) / studentRows.length)
     : 0;
 
-  // Map StudentRow to Student shape for StudentTable + RiskDonutChart
   const studentsForTable: Student[] = studentRows.map((s) => ({
     id: s.id,
     name: s.full_name,
@@ -60,11 +54,9 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
     <AppLayout
       role="instructor"
       session={session}
-      onRoleSwitch={handleRoleSwitch}
       breadcrumbs={[{ label: "Instructor Dashboard" }]}
     >
       <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">
@@ -92,7 +84,6 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
           </div>
         ) : (
           <>
-            {/* KPI cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <KPICard title="Total Students" value={studentRows.length} subtitle="Enrolled in course" icon={U} variant="default" />
               <KPICard title="High Risk" value={highRisk} subtitle={`${studentRows.length ? Math.round((highRisk / studentRows.length) * 100) : 0}% of class`} icon={AT} variant="danger" trend={{ value: 1, label: "since last week" }} />
@@ -100,7 +91,6 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
               <KPICard title="Avg Commits/Week" value={avgCommitsThisWeek} subtitle="Class average this week" icon={GC} variant="info" trend={{ value: -2, label: "vs last week" }} />
             </div>
 
-            {/* Charts row */}
             <div className="grid lg:grid-cols-2 gap-4">
               <RiskDonutChart students={studentsForTable} />
               <CommitTimelineChart
@@ -110,7 +100,6 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
               />
             </div>
 
-            {/* Student table */}
             <StudentTable students={studentsForTable} />
           </>
         )}

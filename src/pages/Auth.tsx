@@ -1,20 +1,51 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Brain, Eye, EyeOff, Loader2, GraduationCap, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+interface Course {
+  id: string;
+  name: string;
+  instructor_name: string;
+}
 
 export default function Auth() {
   const navigate = useNavigate();
   const [mode, setMode] = useState<"login" | "signup">("login");
+  const [signupRole, setSignupRole] = useState<"student" | "instructor">("student");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  // Lecturer fields
+  const [courseName, setCourseName] = useState("");
+
+  // Student fields
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState("");
+  const [coursesLoading, setCoursesLoading] = useState(false);
+
+  // Fetch available courses when student signup is active
+  useEffect(() => {
+    if (mode === "signup" && signupRole === "student") {
+      setCoursesLoading(true);
+      supabase
+        .from("courses")
+        .select("id, name, instructor_name")
+        .order("created_at", { ascending: false })
+        .then(({ data }) => {
+          setCourses(data ?? []);
+          setCoursesLoading(false);
+        });
+    }
+  }, [mode, signupRole]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,14 +56,34 @@ export default function Auth() {
       if (mode === "login") {
         const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
         if (signInError) throw signInError;
-        // Navigation is handled by App.tsx auth state listener
       } else {
+        const metadata: Record<string, string> = {
+          full_name: fullName.trim() || email.split("@")[0],
+          role: signupRole,
+        };
+
+        if (signupRole === "instructor") {
+          if (!courseName.trim()) {
+            setError("Please enter a course name.");
+            setLoading(false);
+            return;
+          }
+          metadata.course_name = courseName.trim();
+        } else {
+          if (!selectedCourseId) {
+            setError("Please select a course to join.");
+            setLoading(false);
+            return;
+          }
+          metadata.course_id = selectedCourseId;
+        }
+
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             emailRedirectTo: window.location.origin,
-            data: { full_name: fullName.trim() || email.split("@")[0] },
+            data: metadata,
           },
         });
         if (signUpError) throw signUpError;
@@ -67,10 +118,43 @@ export default function Auth() {
           <p className="text-xs text-muted-foreground mb-6">
             {mode === "login"
               ? "Sign in to access your dashboard"
-              : "Register to join the course"}
+              : "Register to join or create a course"}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Role toggle for signup */}
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">I am a</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSignupRole("student")}
+                    className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-medium transition-colors ${
+                      signupRole === "student"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Student
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSignupRole("instructor")}
+                    className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-medium transition-colors ${
+                      signupRole === "instructor"
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:bg-accent"
+                    }`}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Lecturer
+                  </button>
+                </div>
+              </div>
+            )}
+
             {mode === "signup" && (
               <div className="space-y-1.5">
                 <Label htmlFor="fullName" className="text-xs">Full Name</Label>
@@ -85,6 +169,50 @@ export default function Auth() {
                 />
               </div>
             )}
+
+            {/* Lecturer: course name */}
+            {mode === "signup" && signupRole === "instructor" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="courseName" className="text-xs">Course Name</Label>
+                <Input
+                  id="courseName"
+                  type="text"
+                  placeholder="Software Engineering 2025"
+                  value={courseName}
+                  onChange={(e) => setCourseName(e.target.value)}
+                  required
+                  className="h-9 text-sm"
+                />
+              </div>
+            )}
+
+            {/* Student: course picker */}
+            {mode === "signup" && signupRole === "student" && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Select Course</Label>
+                {coursesLoading ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading courses…
+                  </div>
+                ) : courses.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">No courses available. Ask your lecturer to register first.</p>
+                ) : (
+                  <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                    <SelectTrigger className="h-9 text-sm">
+                      <SelectValue placeholder="Choose a course…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} — {c.instructor_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+
             <div className="space-y-1.5">
               <Label htmlFor="email" className="text-xs">Email</Label>
               <Input

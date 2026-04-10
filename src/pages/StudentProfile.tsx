@@ -49,13 +49,9 @@ export default function StudentProfile({ session }: StudentProfileProps) {
   const { data: student, isLoading } = useStudent(id);
   const { data: classAverageFeatures } = useClassAverageFeatures(profile?.course_id);
 
-  async function handleRoleSwitch() {
-    window.location.href = "/student";
-  }
-
   if (isLoading) {
     return (
-      <AppLayout role="instructor" session={session} onRoleSwitch={handleRoleSwitch} breadcrumbs={[{ label: "Dashboard", href: "/instructor" }, { label: "Loading..." }]}>
+      <AppLayout role="instructor" session={session} breadcrumbs={[{ label: "Dashboard", href: "/instructor" }, { label: "Loading..." }]}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -65,7 +61,7 @@ export default function StudentProfile({ session }: StudentProfileProps) {
 
   if (!student) {
     return (
-      <AppLayout role="instructor" session={session} onRoleSwitch={handleRoleSwitch} breadcrumbs={[{ label: "Dashboard", href: "/instructor" }, { label: "Not Found" }]}>
+      <AppLayout role="instructor" session={session} breadcrumbs={[{ label: "Dashboard", href: "/instructor" }, { label: "Not Found" }]}>
         <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
           Student not found.
         </div>
@@ -79,7 +75,6 @@ export default function StudentProfile({ session }: StudentProfileProps) {
     <AppLayout
       role="instructor"
       session={session}
-      onRoleSwitch={handleRoleSwitch}
       breadcrumbs={[
         { label: "Dashboard", href: "/instructor" },
         { label: "Students", href: "/instructor" },

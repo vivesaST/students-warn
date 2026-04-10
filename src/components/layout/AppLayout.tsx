@@ -15,11 +15,10 @@ interface AppLayoutProps {
   children: ReactNode;
   role: "instructor" | "student";
   session: Session | null;
-  onRoleSwitch: () => void;
   breadcrumbs?: BreadcrumbItem[];
 }
 
-export function AppLayout({ children, role, session, onRoleSwitch, breadcrumbs }: AppLayoutProps) {
+export function AppLayout({ children, role, session, breadcrumbs }: AppLayoutProps) {
   const navigate = useNavigate();
   const { data: profile } = useProfile(session?.user?.id);
 
@@ -31,7 +30,7 @@ export function AppLayout({ children, role, session, onRoleSwitch, breadcrumbs }
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar role={displayRole} session={session} onRoleSwitch={onRoleSwitch} />
+        <AppSidebar role={displayRole} session={session} />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           {/* Header */}

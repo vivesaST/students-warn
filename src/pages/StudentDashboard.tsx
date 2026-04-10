@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowUp, ArrowDown, Minus, Github, ExternalLink, TrendingUp, TrendingDown, Loader2, Pencil, Check, X } from "lucide-react";
+import { TrendingUp, TrendingDown, Loader2, Pencil, Check, X, Github, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StudentDashboardProps {
@@ -90,13 +90,9 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
     }
   }
 
-  async function handleRoleSwitch() {
-    window.location.href = "/instructor";
-  }
-
   if (isLoading) {
     return (
-      <AppLayout role="student" session={session} onRoleSwitch={handleRoleSwitch} breadcrumbs={[{ label: "My Dashboard" }]}>
+      <AppLayout role="student" session={session} breadcrumbs={[{ label: "My Dashboard" }]}>
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
         </div>
@@ -109,7 +105,7 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
 
   if (isSyncing) {
     return (
-      <AppLayout role="student" session={session} onRoleSwitch={handleRoleSwitch} breadcrumbs={[{ label: "My Dashboard" }]}>
+      <AppLayout role="student" session={session} breadcrumbs={[{ label: "My Dashboard" }]}>
         <div className="max-w-lg mx-auto mt-16 space-y-6">
           <div className="rounded-xl border border-border bg-card p-6 text-center space-y-4">
             <Loader2 className="h-10 w-10 mx-auto text-primary animate-spin" />
@@ -128,7 +124,7 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
 
   if (!student) {
     return (
-      <AppLayout role="student" session={session} onRoleSwitch={handleRoleSwitch} breadcrumbs={[{ label: "My Dashboard" }]}>
+      <AppLayout role="student" session={session} breadcrumbs={[{ label: "My Dashboard" }]}>
         <div className="max-w-lg mx-auto mt-16 space-y-6">
           <div className="rounded-xl border border-border bg-card p-6 text-center space-y-4">
             <Github className="h-10 w-10 mx-auto text-muted-foreground" />
@@ -166,7 +162,6 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
     low: "Great work! Your Git habits are strong. Keep maintaining your commit frequency and quality.",
   }[student.riskLevel];
 
-  // Derive contributing factors from actual features vs class average
   const contributingFactors = classAverageFeatures ? [
     student.features.commitRegularityScore < classAverageFeatures.commitRegularityScore
       ? { label: "Commit Regularity", impact: "negative", description: `Score of ${student.features.commitRegularityScore}/100 — below class average of ${Math.round(classAverageFeatures.commitRegularityScore)}/100` }
@@ -183,7 +178,7 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
   ].filter(Boolean) as { label: string; impact: string; description: string }[] : [];
 
   return (
-    <AppLayout role="student" session={session} onRoleSwitch={handleRoleSwitch} breadcrumbs={[{ label: "My Dashboard" }]}>
+    <AppLayout role="student" session={session} breadcrumbs={[{ label: "My Dashboard" }]}>
       <div className="space-y-6 max-w-6xl mx-auto">
         {/* Risk Banner */}
         <div className={cn("rounded-xl border bg-gradient-to-r to-card p-6", riskBannerColor)}>
@@ -248,7 +243,6 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
           </div>
         </div>
 
-        {/* Metrics grid vs class average */}
         {classAverageFeatures && (
           <div className="rounded-xl border border-border bg-card p-5">
             <h3 className="text-sm font-semibold text-foreground mb-1">Your Metrics vs Class Average</h3>
@@ -268,7 +262,6 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
           </div>
         )}
 
-        {/* Radar + Risk Trend */}
         <div className="grid lg:grid-cols-2 gap-4">
           {classAverageFeatures && (
             <FeatureRadarChart studentFeatures={student.features} classAverageFeatures={classAverageFeatures} studentName="You" />
@@ -276,10 +269,8 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
           <RiskTrendChart data={student.weeklyRiskHistory} title="Your Risk Score Over Time" subtitle="Track your progress week by week" />
         </div>
 
-        {/* Commit timeline */}
         <CommitTimelineChart data={student.weeklyCommitHistory} title="Your Commit Activity" subtitle="Lines added and deleted per week" />
 
-        {/* Contributing factors */}
         {contributingFactors.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5">
             <h3 className="text-sm font-semibold text-foreground mb-1">Top Contributing Risk Factors</h3>

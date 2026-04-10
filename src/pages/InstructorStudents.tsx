@@ -14,10 +14,6 @@ export default function InstructorStudents({ session }: InstructorStudentsProps)
   const { data: profile } = useProfile(session?.user?.id);
   const { data: studentRows = [], isLoading } = useStudents(profile?.course_id);
 
-  function handleRoleSwitch() {
-    window.location.href = "/student";
-  }
-
   const studentsForTable: Student[] = studentRows.map((s) => ({
     id: s.id,
     name: s.full_name,
@@ -42,7 +38,6 @@ export default function InstructorStudents({ session }: InstructorStudentsProps)
     <AppLayout
       role="instructor"
       session={session}
-      onRoleSwitch={handleRoleSwitch}
       breadcrumbs={[{ label: "Instructor Dashboard", href: "/instructor" }, { label: "Students" }]}
     >
       <div className="space-y-6 max-w-7xl mx-auto">
