@@ -1,47 +1,63 @@
 
 
-## Plan: Generate Chapter 3 DOCX — System Design and Methodology
+## Plan: Role-Specific Registration and Remove Role Switching
 
-Create an 18-page academic DOCX document for Chapter 3 of the EarlyWarn project, with embedded Mermaid-to-image diagrams.
+### Summary
+Update the signup flow so users register as either Student or Lecturer with role-specific fields, update the DB trigger to handle course creation/linking, and remove the manual role-switch button from the sidebar.
 
-### Content Sections (mapped to the codebase)
+### 1. Database Migration — Update `handle_new_user` trigger
 
-| Section | Source |
-|---------|--------|
-| 3.1 System Overview & Justification | App.tsx routes, project purpose |
-| 3.2 Requirements | DB schema (profiles, student_features, risk_assessments), AuthGuard, RLS policies |
-| 3.3 Methodology | Agile/Scrum framing for the project |
-| 3.4 Architecture | 3-tier: React frontend, Supabase Edge Functions, PostgreSQL. Includes high-level diagram, component descriptions, logical design diagram |
-| 3.5 Languages & Tools | React 18, TypeScript 5, Vite 5, Tailwind CSS, Supabase, Recharts, TanStack Query, Deno |
-| 3.6 Database Design | ER diagram from actual schema (8 tables: profiles, courses, student_features, risk_assessments, daily_commits, weekly_commits, weekly_risk_history, recommendations, class_weekly_commits), indexes |
-| 3.7 Software Modules | Auth module (AuthGuard + Supabase Auth), Data Collection (sync-github-data edge function), Feature Engineering (15 metrics computed in edge function), ML Module (risk scoring algorithm) |
-| 3.8 Security | RLS policies, SECURITY DEFINER functions, JWT auth, service_role separation |
-| 3.9 Summary | Chapter wrap-up |
+Replace the existing trigger function with the version from the earlier conversation:
+- Reads `role` from signup metadata (defaults to `student`)
+- For `instructor`: creates a new course row and links the profile to it
+- For `student`: links to an existing course via `course_id` from metadata
+- Uses `ON CONFLICT DO UPDATE` to handle edge cases
 
-### Diagrams (generated as PNG via Mermaid CLI)
+### 2. Update Auth.tsx — Role-specific signup form
 
-1. **High-Level Architecture Diagram** (Section 3.4.1) — 3-tier showing Browser, Supabase Edge Functions, PostgreSQL
-2. **Logical Design / Data Flow Diagram** (Section 3.4.3) — GitHub API to Feature Extraction to Risk Scoring to Dashboard
-3. **Entity-Relationship Diagram** (Section 3.6.1) — All 9 tables with relationships
-4. **Component Diagram** (Section 3.7) — Auth, Data Collection, Feature Engineering, Risk Scoring modules
+- Add a role toggle (Student / Lecturer) in signup mode
+- **Lecturer signup**: show "Full Name" + "Course Name" fields; pass `role: 'instructor'` and `course_name` in signup metadata
+- **Student signup**: show "Full Name" + "Course Code" dropdown (fetched from `courses` table); pass `role: 'student'` and `course_id` in metadata
+- Fetch available courses from Supabase to populate the dropdown (public select policy needed)
 
-### Formatting
+### 3. Database Migration — Allow anon to read courses
 
-- **Font**: Times New Roman (academic standard)
-- **Headings**: Bold, 14pt for chapter title, 13pt for major sections, 12pt for subsections
-- **Body text**: 12pt, 1.5 line spacing, justified
-- **Page size**: A4 with 1-inch margins
-- **Target**: 18 pages
+Add an RLS policy so the signup form can list available courses:
+```sql
+CREATE POLICY "Anyone can view courses" ON public.courses
+  FOR SELECT TO anon USING (true);
+```
 
-### Implementation Steps
+### 4. Remove `onRoleSwitch` from Sidebar and AppLayout
 
-1. Install dependencies (`docx`, `@mermaid-js/mermaid-cli` or use mermaid-js via puppeteer)
-2. Generate 4 diagram PNGs from Mermaid definitions
-3. Build the DOCX with `docx` npm package, embedding diagram images
-4. Output to `/mnt/documents/EarlyWarn_Chapter3_System_Design.docx`
-5. Convert to PDF for visual QA, inspect all pages
+- **Sidebar.tsx**: Remove the "Student View" switch button and the `onRoleSwitch` prop
+- **AppLayout.tsx**: Remove `onRoleSwitch` from props interface
 
-### Output
+### 5. Update all pages that pass `onRoleSwitch`
 
-- `/mnt/documents/EarlyWarn_Chapter3_System_Design.docx`
+Remove `onRoleSwitch` prop and the `handleRoleSwitch` function from:
+- `InstructorDashboard.tsx`
+- `InstructorStudents.tsx`
+- `InstructorAnalytics.tsx`
+- `StudentDashboard.tsx`
+- `StudentProfile.tsx`
+
+### 6. Update App.tsx — Auto-redirect by role
+
+Update the `/` route: instead of showing the Index page, redirect to `/instructor` or `/student` based on the user's profile role.
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| Migration SQL | New `handle_new_user` trigger + anon courses policy |
+| `src/pages/Auth.tsx` | Role toggle, course name/code fields, updated metadata |
+| `src/components/layout/Sidebar.tsx` | Remove `onRoleSwitch` prop and switch button |
+| `src/components/layout/AppLayout.tsx` | Remove `onRoleSwitch` from props |
+| `src/pages/InstructorDashboard.tsx` | Remove `onRoleSwitch` usage |
+| `src/pages/InstructorStudents.tsx` | Remove `onRoleSwitch` usage |
+| `src/pages/InstructorAnalytics.tsx` | Remove `onRoleSwitch` usage |
+| `src/pages/StudentDashboard.tsx` | Remove `onRoleSwitch` usage |
+| `src/pages/StudentProfile.tsx` | Remove `onRoleSwitch` usage |
+| `src/pages/Index.tsx` | Auto-redirect based on role |
 
