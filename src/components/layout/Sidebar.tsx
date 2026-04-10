@@ -22,7 +22,6 @@ import { useProfile } from "@/hooks/useProfile";
 interface AppSidebarProps {
   role: "instructor" | "student";
   session: Session | null;
-  onRoleSwitch: () => void;
 }
 
 const instructorNav = [
@@ -37,7 +36,7 @@ const studentNav = [
   { title: "Course Info", url: "/student", icon: BookOpen },
 ];
 
-export function AppSidebar({ role, session, onRoleSwitch }: AppSidebarProps) {
+export function AppSidebar({ role, session }: AppSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
@@ -119,20 +118,6 @@ export function AppSidebar({ role, session, onRoleSwitch }: AppSidebarProps) {
       </SidebarContent>
 
       <SidebarFooter className="p-3">
-        {/* Switch role button — only show if instructor (they can view student dashboard for demo) */}
-        {role === "instructor" && (
-          <button
-            onClick={onRoleSwitch}
-            className={cn(
-              "flex w-full items-center gap-2 rounded-md px-2 py-2 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-              collapsed && "justify-center px-0"
-            )}
-          >
-            <Users className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>Student View</span>}
-          </button>
-        )}
-
         {/* Sign out */}
         <button
           onClick={handleSignOut}
