@@ -18,6 +18,7 @@ import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
+import { useCourse } from "@/hooks/useCourse";
 
 interface AppSidebarProps {
   role: "instructor" | "student";
@@ -42,10 +43,11 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: profile } = useProfile(session?.user?.id);
+  const { data: course } = useCourse(profile?.course_id);
 
   const navItems = role === "instructor" ? instructorNav : studentNav;
-  const displayName = profile?.full_name ?? (role === "instructor" ? "Dr. Sarah Mitchell" : "Student");
-  const courseName = "Software Engineering 2025";
+  const displayName = profile?.full_name ?? "";
+  const courseName = course?.name ?? "";
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -75,7 +77,7 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
             <div className={cn(
               "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium",
               role === "instructor"
-                ? "bg-[hsl(var(--chart-1)/0.15)] text-[hsl(var(--chart-1))]"
+                ? "bg-primary/10 text-primary"
                 : "bg-[hsl(var(--risk-low-bg))] text-[hsl(var(--risk-low))]"
             )}>
               {role === "instructor" ? <BarChart2 className="h-3 w-3" /> : <GraduationCap className="h-3 w-3" />}
@@ -85,7 +87,7 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
             <div className={cn(
               "h-6 w-6 rounded-md flex items-center justify-center",
               role === "instructor"
-                ? "bg-[hsl(var(--chart-1)/0.15)] text-[hsl(var(--chart-1))]"
+                ? "bg-primary/10 text-primary"
                 : "bg-[hsl(var(--risk-low-bg))] text-[hsl(var(--risk-low))]"
             )}>
               {role === "instructor" ? <BarChart2 className="h-3 w-3" /> : <GraduationCap className="h-3 w-3" />}
@@ -132,8 +134,8 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
 
         {!collapsed && (
           <div className="mt-2 border-t border-border pt-2">
-            <p className="text-[10px] text-muted-foreground truncate">{displayName}</p>
-            <p className="text-[10px] text-muted-foreground/60 truncate">{courseName}</p>
+            <p className="text-[10px] text-muted-foreground truncate">{displayName || "—"}</p>
+            <p className="text-[10px] text-muted-foreground/60 truncate">{courseName || "No course"}</p>
           </div>
         )}
       </SidebarFooter>
