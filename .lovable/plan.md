@@ -1,63 +1,59 @@
 
 
-## Plan: Role-Specific Registration and Remove Role Switching
+## Plan: Clean Database, Make Everything Dynamic, Update Design
 
-### Summary
-Update the signup flow so users register as either Student or Lecturer with role-specific fields, update the DB trigger to handle course creation/linking, and remove the manual role-switch button from the sidebar.
+### 1. Clear All Seeded Data from Database
 
-### 1. Database Migration — Update `handle_new_user` trigger
+Use the Supabase insert tool (for DELETE operations) to remove all data from these tables in order:
+- `recommendations`
+- `daily_commits`, `weekly_commits`, `weekly_risk_history`
+- `risk_assessments`, `student_features`
+- `class_weekly_commits`
+- `profiles` (all rows)
+- `courses` (all rows)
 
-Replace the existing trigger function with the version from the earlier conversation:
-- Reads `role` from signup metadata (defaults to `student`)
-- For `instructor`: creates a new course row and links the profile to it
-- For `student`: links to an existing course via `course_id` from metadata
-- Uses `ON CONFLICT DO UPDATE` to handle edge cases
+This also clears the seeded auth users (they'll still exist in `auth.users` but their profiles will be gone — harmless).
 
-### 2. Update Auth.tsx — Role-specific signup form
+### 2. Remove Hardcoded Fallbacks — Make Everything Dynamic
 
-- Add a role toggle (Student / Lecturer) in signup mode
-- **Lecturer signup**: show "Full Name" + "Course Name" fields; pass `role: 'instructor'` and `course_name` in signup metadata
-- **Student signup**: show "Full Name" + "Course Code" dropdown (fetched from `courses` table); pass `role: 'student'` and `course_id` in metadata
-- Fetch available courses from Supabase to populate the dropdown (public select policy needed)
-
-### 3. Database Migration — Allow anon to read courses
-
-Add an RLS policy so the signup form can list available courses:
-```sql
-CREATE POLICY "Anyone can view courses" ON public.courses
-  FOR SELECT TO anon USING (true);
-```
-
-### 4. Remove `onRoleSwitch` from Sidebar and AppLayout
-
-- **Sidebar.tsx**: Remove the "Student View" switch button and the `onRoleSwitch` prop
-- **AppLayout.tsx**: Remove `onRoleSwitch` from props interface
-
-### 5. Update all pages that pass `onRoleSwitch`
-
-Remove `onRoleSwitch` prop and the `handleRoleSwitch` function from:
-- `InstructorDashboard.tsx`
-- `InstructorStudents.tsx`
-- `InstructorAnalytics.tsx`
-- `StudentDashboard.tsx`
-- `StudentProfile.tsx`
-
-### 6. Update App.tsx — Auto-redirect by role
-
-Update the `/` route: instead of showing the Index page, redirect to `/instructor` or `/student` based on the user's profile role.
-
-### Files Changed
+**Files to update:**
 
 | File | Change |
 |------|--------|
-| Migration SQL | New `handle_new_user` trigger + anon courses policy |
-| `src/pages/Auth.tsx` | Role toggle, course name/code fields, updated metadata |
-| `src/components/layout/Sidebar.tsx` | Remove `onRoleSwitch` prop and switch button |
-| `src/components/layout/AppLayout.tsx` | Remove `onRoleSwitch` from props |
-| `src/pages/InstructorDashboard.tsx` | Remove `onRoleSwitch` usage |
-| `src/pages/InstructorStudents.tsx` | Remove `onRoleSwitch` usage |
-| `src/pages/InstructorAnalytics.tsx` | Remove `onRoleSwitch` usage |
-| `src/pages/StudentDashboard.tsx` | Remove `onRoleSwitch` usage |
-| `src/pages/StudentProfile.tsx` | Remove `onRoleSwitch` usage |
-| `src/pages/Index.tsx` | Auto-redirect based on role |
+| `AppLayout.tsx` | Replace hardcoded "Software Engineering 2025" with dynamic course name fetched via `useCourse(profile?.course_id)` |
+| `Sidebar.tsx` | Replace hardcoded `"Dr. Sarah Mitchell"` and `"Software Engineering 2025"` with values from `useCourse` hook; show "No course" if none |
+| `InstructorDashboard.tsx` | Remove `?? "Software Engineering 2025"` and `?? "Dr. Sarah Mitchell"` fallbacks — show "Loading…" or empty if no course |
+| `Auth.tsx` | Remove demo credentials box; change lecturer placeholder to "Dr Sadiq Umar" |
+
+### 3. Fintech-Style Design Overhaul
+
+Update `src/index.css` to replace the current dark analytics theme with a clean fintech aesthetic:
+
+- **Background**: Very light gray (`210 20% 98%`) — clean, airy
+- **Cards**: Pure white with subtle shadows instead of dark cards
+- **Primary**: Deep indigo/violet (`243 75% 59%`) — fintech staple
+- **Accent colors**: Teal for success, coral for danger, amber for warnings
+- **Font**: Inter (add via Google Fonts in `index.html`)
+- **Border radius**: Slightly rounder (`0.75rem`)
+- **Borders**: Very subtle (`220 13% 91%`)
+- **Scrollbar**: Lighter, minimal
+- Remove the duplicate `:root` block and `.dark` block — single light theme
+- Risk colors updated to fintech palette (deeper, more saturated)
+
+Update `tailwind.config.ts` to use the Inter font family.
+
+### 4. Remove Mock Data Dependency
+
+The dashboard pages already use Supabase hooks (`useStudents`, `useCourse`, `useClassData`). The `import type { Student } from "@/data/mockData"` is only used as a TypeScript interface — this is fine since it's type-only. No mock data is actually rendered.
+
+### Summary of Files Changed
+
+1. **Database**: DELETE all rows from all tables (via insert tool)
+2. `src/index.css` — Fintech light theme
+3. `index.html` — Add Inter font
+4. `tailwind.config.ts` — Inter font family
+5. `src/components/layout/AppLayout.tsx` — Dynamic course name
+6. `src/components/layout/Sidebar.tsx` — Dynamic names, remove hardcoded strings
+7. `src/pages/InstructorDashboard.tsx` — Remove hardcoded fallbacks
+8. `src/pages/Auth.tsx` — Remove demo credentials, update placeholder
 
