@@ -60,10 +60,10 @@ export default function InstructorDashboard({ session }: InstructorDashboardProp
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">
-              {course?.name ?? "Software Engineering 2025"}
+              {course?.name ?? "Loading…"}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Instructor: {course?.instructorName ?? "Dr. Sarah Mitchell"} · {course?.startDate} → {course?.endDate}
+              Instructor: {course?.instructorName ?? "—"}{course?.startDate ? ` · ${course.startDate} → ${course.endDate}` : ""}
             </p>
           </div>
           <Button

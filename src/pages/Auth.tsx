@@ -161,7 +161,7 @@ export default function Auth() {
                 <Input
                   id="fullName"
                   type="text"
-                  placeholder="Jane Doe"
+                  placeholder="Dr Sadiq Umar"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
@@ -272,24 +272,6 @@ export default function Auth() {
           </div>
         </div>
 
-        {/* Demo credentials */}
-        <div className="mt-4 rounded-xl border border-border bg-muted/30 p-4 text-xs text-muted-foreground">
-          <p className="font-semibold text-foreground mb-2">Demo credentials</p>
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span>Instructor:</span>
-              <code className="text-[10px] bg-muted rounded px-1.5 py-0.5">instructor@uni.edu</code>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Student (Marcus):</span>
-              <code className="text-[10px] bg-muted rounded px-1.5 py-0.5">marcus.chen@uni.edu</code>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Password (all):</span>
-              <code className="text-[10px] bg-muted rounded px-1.5 py-0.5">earlyWarn2025!</code>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
