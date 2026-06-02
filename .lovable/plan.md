@@ -1,16 +1,83 @@
 ## Goal
-Update all references in `Chapter_1_Introduction_Project_now_now.docx` so every cited source is from **2022–2026**, then regenerate the .docx.
+Address the supervisor's feedback by inserting a dedicated **Slide 3.6 — Risk Assessment Methodology (Mathematical Formulation)** into the defense deck, showing the actual risk-scoring equation, variable definitions, weights, and classification thresholds. Math is taken directly from the implemented `computeRiskScore` function in `supabase/functions/sync-github-data/index.ts` so the slide matches the running system.
 
-## Problems found in current document
-The references list and in-text citations include many old sources:
-- Kotsiantis (2007), Sokolova & Lapalme (2009), Powers (2011), Fawcett (2006), Thomas (2000), Kalliamvakou et al. (2014/2016), Munson & Elbaum (1998), Rumberger & Lim (2008), Campbell & Oblinger (2007), Kohavi (1995), Few (2006), Fielding (2000), Blincoe et al. (2016), Márquez-Vera et al. (2016), Guzmán-Valenzuela et al. (2021)
-- A few entries are already in range and will be kept (Al-Din & Al Abdulqader 2024, Bergdahl et al. 2024, Williams 2024, Baker & Inventado 2024, Romero & Ventura 2025, Arnold & Pistilli 2023)
+## What I'll add
 
-## What I'll do
-1. Replace every pre-2022 citation in the **Definition of Terms** section with a 2022–2026 empirical/peer-reviewed equivalent (e.g., recent ML evaluation, GitHub mining, at-risk prediction, dashboard, learning-analytics intervention papers).
-2. Rewrite the **References** list so it contains ~15–18 genuine sources, all dated 2022–2026, in APA 7 format.
-3. Keep all other chapter content (background, problem statement, objectives, scope, significance) untouched.
-4. Regenerate `Chapter_1_Introduction_Project_now_now_v2.docx` and deliver it as a downloadable artifact.
+### New Slide 3.6 — Risk Assessment Methodology
+Inserted after the current Methodology slide (slide 11), before System Architecture.
+
+**Title:** 3.6 Risk Assessment Methodology — Mathematical Formulation
+
+**1. Risk Score Function**
+
+The risk score `R(s)` for a student `s` is a bounded weighted sum of nine behavioural indicators, anchored at a neutral baseline of 50:
+
+```
+R(s) = clamp[0,100] (
+        50
+      + min(20, 3 · d_last)              ← inactivity penalty
+      − min(15, 0.15 · S_reg)            ← regularity reward
+      − min(15, 3 · C_week)              ← recent-activity reward
+      − min(10, 10 · F_day)              ← frequency reward
+      + min(10, 5  · χ)                  ← churn penalty
+      − min(10, 0.1 · Q_msg)             ← message-quality reward
+      − min(5,  1.5 · B)                 ← branching reward
+      − min(5,  2 · M_freq)              ← merge-workflow reward
+      − min(5,  2 · I_rate)              ← issue-engagement reward
+   )
+```
+
+**2. Variable Definitions**
+
+| Symbol | Variable | Source |
+|---|---|---|
+| d_last | Days since last commit | GitHub commits API |
+| S_reg | Commit regularity score (0–100) | 100 − 15·σ(daily commits) |
+| C_week | Commits in last 7 days | GitHub commits API |
+| F_day | Mean commits per day | total_commits / days_span |
+| χ | Code churn ratio | lines_deleted / lines_added |
+| Q_msg | Commit-message quality (0–100) | % of messages > 10 chars |
+| B | Distinct branches | GitHub branches API |
+| M_freq | Merge commits per week | commits matching /merge/i ÷ weeks |
+| I_rate | Issues opened per week | issues ÷ weeks |
+
+**3. Weight Rationale**
+
+Weights reflect predictive importance reported in Hellas et al. (2022) and Cui et al. (2022/2023):
+- **High weight (≤ 20)** — inactivity, regularity, recent commits (strongest at-risk signals)
+- **Medium weight (≤ 10)** — frequency, churn, message quality
+- **Low weight (≤ 5)** — branching, merges, issue activity (workflow maturity)
+
+Each term is capped via `min(·)` to prevent any single metric from dominating the score.
+
+**4. Risk-Level Classification**
+
+```
+Level(s) = High     if R(s) ≥ 65
+         = Moderate if 40 ≤ R(s) < 65
+         = Low      if R(s) < 40
+```
+
+**5. Worked Example**
+
+Student with d_last=5, S_reg=40, C_week=1, F_day=0.2, χ=0.6, Q_msg=55, B=1, M_freq=0.3, I_rate=0.2:
+
+```
+R = 50 + 15 − 6 − 3 − 2 + 3 − 5.5 − 1.5 − 0.6 − 0.4
+  ≈ 49  →  Moderate Risk
+```
+
+## Update to existing Methodology slide (11)
+Tighten the "Risk Scoring" bullet to: *"Risk Scoring: Weighted heuristic function R(s) combining 9 behavioural indicators (see Slide 3.6)."*
+
+## Technical implementation
+- Open the uploaded `.pptx` with `python-pptx`
+- Duplicate the layout of slide 11 and insert the new slide at position 12
+- Add equation as monospace text frame (Consolas 14pt) for readability
+- Add variable table using `add_table`
+- Update slide 11 bullet
+- Save as `EarlyWarning_Defense_Presentation_v3.pptx` in `/mnt/documents/`
+- QA: render to PDF via LibreOffice and inspect slides 11–13 as images for overflow/alignment
 
 ## Deliverable
-A single updated Word file with consistent 2022–2026 citations matching the existing chapter structure.
+`EarlyWarning_Defense_Presentation_v3.pptx` with the new Risk Assessment Methodology slide containing the explicit mathematical function, ready for defense.
