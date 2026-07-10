@@ -105,6 +105,18 @@ export type Database = {
           },
         ]
       }
+      keepalive: {
+        Row: {
+          id: number
+        }
+        Insert: {
+          id: number
+        }
+        Update: {
+          id?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           commits_this_week: number | null
