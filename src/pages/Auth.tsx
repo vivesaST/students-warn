@@ -79,7 +79,14 @@ export default function Auth() {
             setLoading(false);
             return;
           }
+          if (!githubUsername.trim() || !githubUrl.trim()) {
+            setError("Please enter your GitHub username and repository URL.");
+            setLoading(false);
+            return;
+          }
           metadata.course_id = selectedCourseId;
+          metadata.github_username = githubUsername.trim().replace(/^@/, "");
+          metadata.github_url = githubUrl.trim();
         }
 
         const { error: signUpError } = await supabase.auth.signUp({
