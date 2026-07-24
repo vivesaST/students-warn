@@ -186,7 +186,39 @@ export default function Auth() {
               </div>
             )}
 
+            {/* Student: GitHub details */}
+            {mode === "signup" && signupRole === "student" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ghUser" className="text-xs">GitHub Username</Label>
+                  <Input
+                    id="ghUser"
+                    type="text"
+                    placeholder="octocat"
+                    value={githubUsername}
+                    onChange={(e) => setGithubUsername(e.target.value)}
+                    required
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ghUrl" className="text-xs">Project Repository URL</Label>
+                  <Input
+                    id="ghUrl"
+                    type="url"
+                    placeholder="https://github.com/octocat/my-project"
+                    value={githubUrl}
+                    onChange={(e) => setGithubUrl(e.target.value)}
+                    required
+                    className="h-9 text-sm"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Your lecturer uses this to track your commit activity.</p>
+                </div>
+              </>
+            )}
+
             {/* Student: course picker */}
+
             {mode === "signup" && signupRole === "student" && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Select Course</Label>
