@@ -12,6 +12,7 @@ import Index from "./pages/Index.tsx";
 import InstructorDashboard from "./pages/InstructorDashboard.tsx";
 import InstructorStudents from "./pages/InstructorStudents.tsx";
 import InstructorAnalytics from "./pages/InstructorAnalytics.tsx";
+import InstructorCourses from "./pages/InstructorCourses.tsx";
 import StudentProfile from "./pages/StudentProfile.tsx";
 import StudentDashboard from "./pages/StudentDashboard.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -74,6 +75,14 @@ export default function App() {
               element={
                 <AuthGuard session={session} loading={loading}>
                   <InstructorAnalytics session={session} />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/instructor/courses"
+              element={
+                <AuthGuard session={session} loading={loading}>
+                  <InstructorCourses session={session} />
                 </AuthGuard>
               }
             />
