@@ -127,12 +127,8 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
           {!collapsed && <span>Sign Out</span>}
         </button>
 
-        {!collapsed && (
-          <div className="mt-2 border-t border-border pt-2">
-            <p className="text-[10px] text-muted-foreground truncate">{displayName || "—"}</p>
-            <p className="text-[10px] text-muted-foreground/60 truncate">{courseName || "No course"}</p>
-          </div>
-        )}
+      </SidebarFooter>
+
       </SidebarFooter>
     </Sidebar>
   );
