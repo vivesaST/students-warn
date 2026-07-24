@@ -27,6 +27,10 @@ export default function Auth() {
   // Lecturer fields
   const [courseName, setCourseName] = useState("");
 
+  // Student GitHub fields
+  const [githubUsername, setGithubUsername] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+
   // Student fields
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState("");
