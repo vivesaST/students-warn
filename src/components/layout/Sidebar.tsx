@@ -128,8 +128,6 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
         </button>
 
       </SidebarFooter>
-
-      </SidebarFooter>
     </Sidebar>
   );
 }
