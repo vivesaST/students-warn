@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Eye, EyeOff, Loader2, GraduationCap, BookOpen } from "lucide-react";
+import { Eye, EyeOff, Loader2, GraduationCap, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,10 @@ export default function Auth() {
 
   // Lecturer fields
   const [courseName, setCourseName] = useState("");
+
+  // Student GitHub fields
+  const [githubUsername, setGithubUsername] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
 
   // Student fields
   const [courses, setCourses] = useState<Course[]>([]);
@@ -75,7 +79,14 @@ export default function Auth() {
             setLoading(false);
             return;
           }
+          if (!githubUsername.trim() || !githubUrl.trim()) {
+            setError("Please enter your GitHub username and repository URL.");
+            setLoading(false);
+            return;
+          }
           metadata.course_id = selectedCourseId;
+          metadata.github_username = githubUsername.trim().replace(/^@/, "");
+          metadata.github_url = githubUrl.trim();
         }
 
         const { error: signUpError } = await supabase.auth.signUp({
@@ -99,16 +110,10 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Brain className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-base font-bold text-foreground">EarlyWarn</p>
-            <p className="text-[10px] text-muted-foreground">Student Risk Detection</p>
-          </div>
+        <div className="flex items-center justify-center mb-8">
+          <p className="text-xl font-bold text-foreground tracking-tight">EarlyWarn</p>
         </div>
+
 
         {/* Card */}
         <div className="rounded-xl border border-border bg-card p-6 shadow-lg">
@@ -186,7 +191,39 @@ export default function Auth() {
               </div>
             )}
 
+            {/* Student: GitHub details */}
+            {mode === "signup" && signupRole === "student" && (
+              <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ghUser" className="text-xs">GitHub Username</Label>
+                  <Input
+                    id="ghUser"
+                    type="text"
+                    placeholder="octocat"
+                    value={githubUsername}
+                    onChange={(e) => setGithubUsername(e.target.value)}
+                    required
+                    className="h-9 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ghUrl" className="text-xs">Project Repository URL</Label>
+                  <Input
+                    id="ghUrl"
+                    type="url"
+                    placeholder="https://github.com/octocat/my-project"
+                    value={githubUrl}
+                    onChange={(e) => setGithubUrl(e.target.value)}
+                    required
+                    className="h-9 text-sm"
+                  />
+                  <p className="text-[10px] text-muted-foreground">Your lecturer uses this to track your commit activity.</p>
+                </div>
+              </>
+            )}
+
             {/* Student: course picker */}
+
             {mode === "signup" && signupRole === "student" && (
               <div className="space-y-1.5">
                 <Label className="text-xs">Select Course</Label>

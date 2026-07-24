@@ -18,7 +18,6 @@ import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
-import { useCourse } from "@/hooks/useCourse";
 
 interface AppSidebarProps {
   role: "instructor" | "student";
@@ -29,6 +28,7 @@ const instructorNav = [
   { title: "Dashboard", url: "/instructor", icon: Home },
   { title: "Students", url: "/instructor/students", icon: Users },
   { title: "Analytics", url: "/instructor/analytics", icon: BarChart2 },
+  { title: "Courses", url: "/instructor/courses", icon: BookOpen },
 ];
 
 const studentNav = [
@@ -43,11 +43,8 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: profile } = useProfile(session?.user?.id);
-  const { data: course } = useCourse(profile?.course_id);
 
   const navItems = role === "instructor" ? instructorNav : studentNav;
-  const displayName = profile?.full_name ?? "";
-  const courseName = course?.name ?? "";
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -57,18 +54,13 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarHeader className="px-3 py-4">
-        <div className={cn("flex items-center gap-2", collapsed && "justify-center")}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <GraduationCap className="h-4 w-4" />
-          </div>
-          {!collapsed && (
-            <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-foreground truncate leading-tight">EarlyWarn</span>
-              <span className="text-[10px] text-muted-foreground truncate">Student Risk System</span>
-            </div>
-          )}
+        <div className={cn("flex items-center", collapsed ? "justify-center" : "")}>
+          <span className={cn("font-bold text-foreground tracking-tight", collapsed ? "text-xs" : "text-sm")}>
+            {collapsed ? "EW" : "EarlyWarn"}
+          </span>
         </div>
       </SidebarHeader>
+
 
       <SidebarContent>
         {/* Role badge */}
@@ -132,12 +124,6 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
           {!collapsed && <span>Sign Out</span>}
         </button>
 
-        {!collapsed && (
-          <div className="mt-2 border-t border-border pt-2">
-            <p className="text-[10px] text-muted-foreground truncate">{displayName || "—"}</p>
-            <p className="text-[10px] text-muted-foreground/60 truncate">{courseName || "No course"}</p>
-          </div>
-        )}
       </SidebarFooter>
     </Sidebar>
   );
