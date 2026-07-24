@@ -18,7 +18,6 @@ import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useProfile } from "@/hooks/useProfile";
-import { useCourse } from "@/hooks/useCourse";
 
 interface AppSidebarProps {
   role: "instructor" | "student";
@@ -29,6 +28,7 @@ const instructorNav = [
   { title: "Dashboard", url: "/instructor", icon: Home },
   { title: "Students", url: "/instructor/students", icon: Users },
   { title: "Analytics", url: "/instructor/analytics", icon: BarChart2 },
+  { title: "Courses", url: "/instructor/courses", icon: BookOpen },
 ];
 
 const studentNav = [
