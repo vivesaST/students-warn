@@ -43,11 +43,8 @@ export function AppSidebar({ role, session }: AppSidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { data: profile } = useProfile(session?.user?.id);
-  const { data: course } = useCourse(profile?.course_id);
 
   const navItems = role === "instructor" ? instructorNav : studentNav;
-  const displayName = profile?.full_name ?? "";
-  const courseName = course?.name ?? "";
 
   async function handleSignOut() {
     await supabase.auth.signOut();
