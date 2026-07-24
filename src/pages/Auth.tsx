@@ -99,16 +99,10 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Brain className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-base font-bold text-foreground">EarlyWarn</p>
-            <p className="text-[10px] text-muted-foreground">Student Risk Detection</p>
-          </div>
+        <div className="flex items-center justify-center mb-8">
+          <p className="text-xl font-bold text-foreground tracking-tight">EarlyWarn</p>
         </div>
+
 
         {/* Card */}
         <div className="rounded-xl border border-border bg-card p-6 shadow-lg">
