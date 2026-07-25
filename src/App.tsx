@@ -15,6 +15,8 @@ import InstructorAnalytics from "./pages/InstructorAnalytics.tsx";
 import InstructorCourses from "./pages/InstructorCourses.tsx";
 import StudentProfile from "./pages/StudentProfile.tsx";
 import StudentDashboard from "./pages/StudentDashboard.tsx";
+import StudentProgress from "./pages/StudentProgress.tsx";
+import StudentCourse from "./pages/StudentCourse.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
