@@ -63,7 +63,8 @@ export default function StudentProgress({ session }: Props) {
             {classAverageFeatures && (
               <FeatureRadarChart
                 studentFeatures={student.features}
-                classAverage={classAverageFeatures}
+                classAverageFeatures={classAverageFeatures}
+                studentName={student.name}
               />
             )}
           </>
