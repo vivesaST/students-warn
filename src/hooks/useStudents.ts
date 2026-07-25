@@ -9,6 +9,7 @@ export interface StudentRow {
   github_username: string | null;
   github_url: string | null;
   course_id: string | null;
+  course_name: string | null;
   last_commit_date: string | null;
   total_commits: number;
   commits_this_week: number;
@@ -17,21 +18,36 @@ export interface StudentRow {
   riskLevel: RiskLevel;
 }
 
-export function useStudents(courseId: string | null | undefined) {
+/**
+ * Returns every student enrolled in ANY course created by this instructor,
+ * not just the instructor's currently active course.
+ */
+export function useStudents(instructorId: string | null | undefined) {
   return useQuery({
-    queryKey: ["students", courseId],
-    queryFn: async () => {
-      if (!courseId) return [];
+    queryKey: ["students", "byInstructor", instructorId],
+    queryFn: async (): Promise<StudentRow[]> => {
+      if (!instructorId) return [];
 
-      // Fetch profiles + latest risk assessment in parallel
+      const { data: courses, error: coursesError } = await supabase
+        .from("courses")
+        .select("id, name")
+        .eq("created_by", instructorId);
+      if (coursesError) throw coursesError;
+
+      const courseIds = (courses ?? []).map((c) => c.id);
+      if (courseIds.length === 0) return [];
+      const courseNames = new Map((courses ?? []).map((c) => [c.id, c.name]));
+
       const [profilesRes, assessmentsRes] = await Promise.all([
-        supabase.from("profiles").select("*").eq("course_id", courseId).eq("role", "student"),
-        supabase.from("risk_assessments").select("student_id, risk_score, risk_level, assessed_at").order("assessed_at", { ascending: false }),
+        supabase.from("profiles").select("*").in("course_id", courseIds).eq("role", "student"),
+        supabase
+          .from("risk_assessments")
+          .select("student_id, risk_score, risk_level, assessed_at")
+          .order("assessed_at", { ascending: false }),
       ]);
 
       if (profilesRes.error) throw profilesRes.error;
 
-      // Build a map of latest risk per student
       const latestRisk = new Map<string, { risk_score: number; risk_level: string }>();
       for (const a of assessmentsRes.data ?? []) {
         if (!latestRisk.has(a.student_id)) {
@@ -48,6 +64,7 @@ export function useStudents(courseId: string | null | undefined) {
           github_username: p.github_username,
           github_url: p.github_url,
           course_id: p.course_id,
+          course_name: p.course_id ? courseNames.get(p.course_id) ?? null : null,
           last_commit_date: p.last_commit_date,
           total_commits: p.total_commits,
           commits_this_week: p.commits_this_week,
@@ -57,6 +74,6 @@ export function useStudents(courseId: string | null | undefined) {
         } as StudentRow;
       });
     },
-    enabled: !!courseId,
+    enabled: !!instructorId,
   });
 }

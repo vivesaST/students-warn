@@ -407,6 +407,14 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      is_my_student: {
+        Args: { _instructor_id: string; _student_id: string }
+        Returns: boolean
+      }
+      owns_course: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "instructor" | "student"

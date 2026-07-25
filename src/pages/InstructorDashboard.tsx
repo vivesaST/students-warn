@@ -19,7 +19,7 @@ interface InstructorDashboardProps {
 
 export default function InstructorDashboard({ session }: InstructorDashboardProps) {
   const { data: profile } = useProfile(session?.user?.id);
-  const { data: studentRows = [], isLoading: studentsLoading } = useStudents(profile?.course_id);
+  const { data: studentRows = [], isLoading: studentsLoading } = useStudents(profile?.role === "instructor" ? profile.id : undefined);
   const { data: course } = useCourse(profile?.course_id);
   const { data: classWeeklyCommits = [] } = useClassWeeklyCommits(profile?.course_id);
   const { sync, isSyncing } = useSyncGithub();

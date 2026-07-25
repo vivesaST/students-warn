@@ -12,7 +12,7 @@ interface InstructorStudentsProps {
 
 export default function InstructorStudents({ session }: InstructorStudentsProps) {
   const { data: profile } = useProfile(session?.user?.id);
-  const { data: studentRows = [], isLoading } = useStudents(profile?.course_id);
+  const { data: studentRows = [], isLoading } = useStudents(profile?.role === "instructor" ? profile.id : undefined);
 
   const studentsForTable: Student[] = studentRows.map((s) => ({
     id: s.id,

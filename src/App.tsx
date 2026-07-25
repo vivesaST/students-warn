@@ -15,6 +15,8 @@ import InstructorAnalytics from "./pages/InstructorAnalytics.tsx";
 import InstructorCourses from "./pages/InstructorCourses.tsx";
 import StudentProfile from "./pages/StudentProfile.tsx";
 import StudentDashboard from "./pages/StudentDashboard.tsx";
+import StudentProgress from "./pages/StudentProgress.tsx";
+import StudentCourse from "./pages/StudentCourse.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -99,6 +101,22 @@ export default function App() {
               element={
                 <AuthGuard session={session} loading={loading}>
                   <StudentDashboard session={session} />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/student/progress"
+              element={
+                <AuthGuard session={session} loading={loading}>
+                  <StudentProgress session={session} />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/student/course"
+              element={
+                <AuthGuard session={session} loading={loading}>
+                  <StudentCourse session={session} />
                 </AuthGuard>
               }
             />

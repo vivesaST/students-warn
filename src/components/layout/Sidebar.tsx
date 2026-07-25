@@ -33,8 +33,8 @@ const instructorNav = [
 
 const studentNav = [
   { title: "My Dashboard", url: "/student", icon: Home },
-  { title: "My Progress", url: "/student", icon: BarChart2 },
-  { title: "Course Info", url: "/student", icon: BookOpen },
+  { title: "My Progress", url: "/student/progress", icon: BarChart2 },
+  { title: "Course Info", url: "/student/course", icon: BookOpen },
 ];
 
 export function AppSidebar({ role, session }: AppSidebarProps) {
