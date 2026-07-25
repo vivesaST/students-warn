@@ -104,6 +104,22 @@ export default function App() {
                 </AuthGuard>
               }
             />
+            <Route
+              path="/student/progress"
+              element={
+                <AuthGuard session={session} loading={loading}>
+                  <StudentProgress session={session} />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/student/course"
+              element={
+                <AuthGuard session={session} loading={loading}>
+                  <StudentCourse session={session} />
+                </AuthGuard>
+              }
+            />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
