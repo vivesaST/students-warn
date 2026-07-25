@@ -14,7 +14,7 @@ interface InstructorAnalyticsProps {
 
 export default function InstructorAnalytics({ session }: InstructorAnalyticsProps) {
   const { data: profile } = useProfile(session?.user?.id);
-  const { data: studentRows = [], isLoading } = useStudents(profile?.course_id);
+  const { data: studentRows = [], isLoading } = useStudents(profile?.role === "instructor" ? profile.id : undefined);
   const { data: classWeeklyCommits = [] } = useClassWeeklyCommits(profile?.course_id);
 
   const studentsForChart: Student[] = studentRows.map((s) => ({
