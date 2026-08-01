@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
         }
 
         if (!repo) {
-          results.push({ studentId: student.id, username: owner, status: "skipped: no repo URL" });
+          results.push({ studentId: student.id, username: owner, status: "failed", detail: "No GitHub repository URL is configured." });
           continue;
         }
 
@@ -304,19 +304,21 @@ Deno.serve(async (req) => {
         });
         const riskLevel = riskScore >= 65 ? "high" : riskScore >= 40 ? "moderate" : "low";
 
-        await supabase.from("risk_assessments").insert({
+        const { error: riskError } = await supabase.from("risk_assessments").insert({
           student_id: student.id,
           risk_score: riskScore,
           risk_level: riskLevel,
         });
+        if (riskError) throw riskError;
 
         // Weekly risk history entry
         const currentWeekLabel = `W${Math.ceil((now.getDate()) / 7)}`;
-        await supabase.from("weekly_risk_history").insert({
+        const { error: riskHistoryError } = await supabase.from("weekly_risk_history").insert({
           student_id: student.id,
           week_label: currentWeekLabel,
           risk_score: riskScore,
         });
+        if (riskHistoryError) throw riskHistoryError;
 
         // === Generate recommendations ===
         const recs = generateRecommendations({
@@ -328,17 +330,19 @@ Deno.serve(async (req) => {
           branchCount,
         });
         // Delete old recs and insert new
-        await supabase.from("recommendations").delete().eq("student_id", student.id);
+        const { error: deleteRecommendationsError } = await supabase.from("recommendations").delete().eq("student_id", student.id);
+        if (deleteRecommendationsError) throw deleteRecommendationsError;
         if (recs.length > 0) {
-          await supabase.from("recommendations").insert(
+          const { error: recommendationsError } = await supabase.from("recommendations").insert(
             recs.map((r) => ({ ...r, student_id: student.id }))
           );
+          if (recommendationsError) throw recommendationsError;
         }
 
         // === Aggregate class weekly commits ===
         if (student.course_id) {
           for (const wr of weeklyRows) {
-            await supabase.from("class_weekly_commits").upsert(
+            const { error: classWeeklyError } = await supabase.from("class_weekly_commits").upsert(
               {
                 course_id: student.course_id,
                 week_label: wr.week_label,
@@ -348,6 +352,7 @@ Deno.serve(async (req) => {
               },
               { onConflict: "course_id,week_label" }
             );
+            if (classWeeklyError) throw classWeeklyError;
           }
         }
 
