@@ -19,8 +19,9 @@ export function useSyncGithub() {
           : null;
         throw new Error(details?.error ?? error.message);
       }
-      const synced = data?.results?.filter((r: { status: string }) => r.status === "synced").length ?? 0;
-      const failed = data?.results?.length - synced;
+      const results: { status: string }[] = data?.results ?? [];
+      const synced = results.filter((result) => result.status === "synced").length;
+      const failed = results.length - synced;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["students"] }),
         queryClient.invalidateQueries({ queryKey: ["student"] }),
