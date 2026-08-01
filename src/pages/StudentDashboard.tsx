@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TrendingUp, TrendingDown, Loader2, Pencil, Check, X, Github, ExternalLink } from "lucide-react";
+import { TrendingUp, TrendingDown, Loader2, Pencil, Check, X, Github, ExternalLink, Clock3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StudentDashboardProps {
@@ -101,20 +101,20 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
   }
 
   const hasGithub = !!profile?.github_username;
-  const isSyncing = hasGithub && (!student || student.features.totalCommits === 0);
+  const isPendingSync = hasGithub && (!student || !student.hasGithubData);
 
-  if (isSyncing) {
+  if (isPendingSync) {
     return (
       <AppLayout role="student" session={session} breadcrumbs={[{ label: "My Dashboard" }]}>
         <div className="max-w-lg mx-auto mt-16 space-y-6">
           <div className="rounded-xl border border-border bg-card p-6 text-center space-y-4">
-            <Loader2 className="h-10 w-10 mx-auto text-primary animate-spin" />
-            <h2 className="text-lg font-bold text-foreground">Syncing Your GitHub Data…</h2>
+            <Clock3 className="h-10 w-10 mx-auto text-primary" />
+            <h2 className="text-lg font-bold text-foreground">GitHub Data Pending</h2>
             <p className="text-sm text-muted-foreground">
-              We've linked your GitHub account <strong>@{profile?.github_username}</strong>. Your commit history and metrics will appear here after the next sync cycle runs (usually within a few minutes).
+              We've linked <strong>@{profile?.github_username}</strong>, but no successful sync has completed yet. Ask your instructor to run <strong>Sync GitHub</strong>. If it fails, they will now see the exact reason.
             </p>
             <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="gap-2">
-              <Loader2 className="h-3.5 w-3.5" /> Refresh
+              Refresh
             </Button>
           </div>
         </div>

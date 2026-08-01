@@ -85,6 +85,7 @@ export function useStudent(studentId: string | undefined) {
         commitHistory,
         weeklyCommitHistory,
         recommendations,
+        hasGithubData: Boolean(f),
       };
     },
     enabled: !!studentId,

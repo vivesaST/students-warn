@@ -1,9 +1,8 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient } from "npm:@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface ProfileRow {
@@ -37,11 +36,47 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, serviceKey);
+    const authorization = req.headers.get("Authorization");
+    if (!authorization) {
+      return new Response(JSON.stringify({ error: "Sign in as an instructor to sync GitHub data." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const token = authorization.replace(/^Bearer\s+/i, "");
+    const { data: authData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !authData.user) {
+      return new Response(JSON.stringify({ error: "Your session has expired. Sign in again and retry." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const { data: caller } = await supabase.from("profiles").select("role").eq("id", authData.user.id).maybeSingle();
+    if (caller?.role !== "instructor") {
+      return new Response(JSON.stringify({ error: "Only instructors can run the GitHub sync." }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const ghHeaders: HeadersInit = {
       Authorization: `Bearer ${githubPat}`,
       Accept: "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28",
     };
+
+    const credentialCheck = await fetch("https://api.github.com/user", { headers: ghHeaders });
+    if (!credentialCheck.ok) {
+      const detail = await credentialCheck.text();
+      console.error(`GitHub credential check failed [${credentialCheck.status}]: ${detail}`);
+      const message = credentialCheck.status === 401
+        ? "The saved GitHub token is invalid or expired. Update GITHUB_PAT and retry."
+        : `GitHub credential check failed (${credentialCheck.status}).`;
+      return new Response(JSON.stringify({ error: message, status: credentialCheck.status }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    await credentialCheck.text();
 
     // Get all students with a github_username
     const { data: students, error: studentsErr } = await supabase
@@ -58,7 +93,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    const results: { studentId: string; username: string; status: string }[] = [];
+    const results: { studentId: string; username: string; status: string; detail?: string }[] = [];
 
     for (const student of students as ProfileRow[]) {
       if (!student.github_username) continue;
@@ -73,7 +108,7 @@ Deno.serve(async (req) => {
         }
 
         if (!repo) {
-          results.push({ studentId: student.id, username: owner, status: "skipped: no repo URL" });
+          results.push({ studentId: student.id, username: owner, status: "failed", detail: "No GitHub repository URL is configured." });
           continue;
         }
 
@@ -83,7 +118,12 @@ Deno.serve(async (req) => {
           { headers: ghHeaders }
         );
         if (!commitsRes.ok) {
-          results.push({ studentId: student.id, username: owner, status: `github error: ${commitsRes.status}` });
+          const detail = await commitsRes.text();
+          const message = commitsRes.status === 404
+            ? `Repository ${owner}/${repo} was not found or is not accessible.`
+            : `GitHub returned ${commitsRes.status} for ${owner}/${repo}.`;
+          results.push({ studentId: student.id, username: owner, status: "failed", detail: message });
+          console.error(`${message} ${detail}`);
           continue;
         }
         const commits: GitHubCommit[] = await commitsRes.json();
@@ -186,7 +226,7 @@ Deno.serve(async (req) => {
           : 0;
 
         // === Upsert student_features ===
-        await supabase.from("student_features").upsert(
+        const { error: featuresError } = await supabase.from("student_features").upsert(
           {
             student_id: student.id,
             course_id: student.course_id,
@@ -208,13 +248,15 @@ Deno.serve(async (req) => {
           },
           { onConflict: "student_id" }
         );
+        if (featuresError) throw featuresError;
 
         // === Update profile ===
-        await supabase.from("profiles").update({
+        const { error: profileError } = await supabase.from("profiles").update({
           total_commits: totalCommits,
           commits_this_week: commitsLastWeek,
           last_commit_date: lastCommitDate.toISOString().slice(0, 10),
         }).eq("id", student.id);
+        if (profileError) throw profileError;
 
         // === Upsert daily_commits (last 21 days) ===
         const dailyRows: { student_id: string; commit_date: string; commit_count: number }[] = [];
@@ -227,7 +269,8 @@ Deno.serve(async (req) => {
             commit_count: dailyMap[key] || 0,
           });
         }
-        await supabase.from("daily_commits").upsert(dailyRows, { onConflict: "student_id,commit_date" });
+        const { error: dailyError } = await supabase.from("daily_commits").upsert(dailyRows, { onConflict: "student_id,commit_date" });
+        if (dailyError) throw dailyError;
 
         // === Upsert weekly_commits (last 12 weeks) ===
         const weeklyRows: { student_id: string; week_label: string; commits: number; lines_added: number; lines_deleted: number }[] = [];
@@ -244,7 +287,8 @@ Deno.serve(async (req) => {
             lines_deleted: weekCommits.length * Math.round(avgCommitSize * 0.4),
           });
         }
-        await supabase.from("weekly_commits").upsert(weeklyRows, { onConflict: "student_id,week_label" });
+        const { error: weeklyError } = await supabase.from("weekly_commits").upsert(weeklyRows, { onConflict: "student_id,week_label" });
+        if (weeklyError) throw weeklyError;
 
         // === Risk scoring ===
         const riskScore = computeRiskScore({
@@ -260,19 +304,21 @@ Deno.serve(async (req) => {
         });
         const riskLevel = riskScore >= 65 ? "high" : riskScore >= 40 ? "moderate" : "low";
 
-        await supabase.from("risk_assessments").insert({
+        const { error: riskError } = await supabase.from("risk_assessments").insert({
           student_id: student.id,
           risk_score: riskScore,
           risk_level: riskLevel,
         });
+        if (riskError) throw riskError;
 
         // Weekly risk history entry
         const currentWeekLabel = `W${Math.ceil((now.getDate()) / 7)}`;
-        await supabase.from("weekly_risk_history").insert({
+        const { error: riskHistoryError } = await supabase.from("weekly_risk_history").insert({
           student_id: student.id,
           week_label: currentWeekLabel,
           risk_score: riskScore,
         });
+        if (riskHistoryError) throw riskHistoryError;
 
         // === Generate recommendations ===
         const recs = generateRecommendations({
@@ -284,17 +330,19 @@ Deno.serve(async (req) => {
           branchCount,
         });
         // Delete old recs and insert new
-        await supabase.from("recommendations").delete().eq("student_id", student.id);
+        const { error: deleteRecommendationsError } = await supabase.from("recommendations").delete().eq("student_id", student.id);
+        if (deleteRecommendationsError) throw deleteRecommendationsError;
         if (recs.length > 0) {
-          await supabase.from("recommendations").insert(
+          const { error: recommendationsError } = await supabase.from("recommendations").insert(
             recs.map((r) => ({ ...r, student_id: student.id }))
           );
+          if (recommendationsError) throw recommendationsError;
         }
 
         // === Aggregate class weekly commits ===
         if (student.course_id) {
           for (const wr of weeklyRows) {
-            await supabase.from("class_weekly_commits").upsert(
+            const { error: classWeeklyError } = await supabase.from("class_weekly_commits").upsert(
               {
                 course_id: student.course_id,
                 week_label: wr.week_label,
@@ -304,6 +352,7 @@ Deno.serve(async (req) => {
               },
               { onConflict: "course_id,week_label" }
             );
+            if (classWeeklyError) throw classWeeklyError;
           }
         }
 
@@ -317,6 +366,14 @@ Deno.serve(async (req) => {
       }
     }
 
+    const syncedCount = results.filter((result) => result.status === "synced").length;
+    if (syncedCount === 0) {
+      const firstFailure = results.find((result) => result.status !== "synced");
+      return new Response(
+        JSON.stringify({ error: firstFailure?.detail ?? "No students could be synced.", results }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({ success: true, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
