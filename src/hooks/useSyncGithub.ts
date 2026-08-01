@@ -1,19 +1,36 @@
 import { useState } from "react";
+import { FunctionsHttpError } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export function useSyncGithub() {
   const [isSyncing, setIsSyncing] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   async function sync() {
     setIsSyncing(true);
     try {
       const { data, error } = await supabase.functions.invoke("sync-github-data");
-      if (error) throw error;
+      if (error) {
+        const details = error instanceof FunctionsHttpError
+          ? await error.context.json().catch(() => null)
+          : null;
+        throw new Error(details?.error ?? error.message);
+      }
+      const synced = data?.results?.filter((r: { status: string }) => r.status === "synced").length ?? 0;
+      const failed = data?.results?.length - synced;
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["students"] }),
+        queryClient.invalidateQueries({ queryKey: ["student"] }),
+        queryClient.invalidateQueries({ queryKey: ["profile"] }),
+      ]);
       toast({
-        title: "GitHub sync complete",
-        description: `Synced ${data?.results?.filter((r: any) => r.status === "synced").length ?? 0} student(s).`,
+        title: failed > 0 ? "GitHub sync partially complete" : "GitHub sync complete",
+        description: failed > 0
+          ? `Synced ${synced} student(s); ${failed} could not be synced.`
+          : `Synced ${synced} student(s).`,
       });
       return data;
     } catch (err) {

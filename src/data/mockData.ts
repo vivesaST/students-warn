@@ -18,6 +18,7 @@ export interface Student {
   commitHistory: DailyCommits[];
   weeklyCommitHistory: WeeklyCommits[];
   recommendations: Recommendation[];
+  hasGithubData?: boolean;
 }
 
 export interface StudentFeatures {
