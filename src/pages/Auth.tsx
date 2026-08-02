@@ -229,7 +229,7 @@ export default function Auth() {
                     required
                     className="h-9 text-sm"
                   />
-                  <p className="text-[10px] text-muted-foreground">Your lecturer uses this to track your commit activity.</p>
+                  <p className="text-[10px] text-muted-foreground">Your lecturer uses this to track your commit activity. The repository must be <span className="font-medium">public</span>.</p>
                 </div>
               </>
             )}
