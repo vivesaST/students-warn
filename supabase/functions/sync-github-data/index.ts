@@ -403,6 +403,40 @@ Deno.serve(async (req) => {
   }
 });
 
+/**
+ * Parses "owner/repo" out of a GitHub repository URL.
+ * Tolerates trailing ".git", trailing slashes, query strings and fragments,
+ * "git@github.com:owner/repo.git" SSH form, and bare "owner/repo" input.
+ * Falls back to the student's github_username as owner when the value only
+ * contains a repository name.
+ */
+function parseRepo(
+  rawUrl: string | null,
+  fallbackOwner: string | null
+): { owner: string; repo: string } | null {
+  const clean = (value: string) =>
+    value.trim().replace(/[?#].*$/, "").replace(/\/+$/, "").replace(/\.git$/i, "");
+
+  const owner0 = fallbackOwner ? clean(fallbackOwner).replace(/^@/, "") : "";
+  if (!rawUrl || !rawUrl.trim()) return null;
+
+  let value = clean(rawUrl);
+  value = value.replace(/^git@github\.com:/i, "");
+  value = value.replace(/^(https?:\/\/)?(www\.)?github\.com\//i, "");
+  value = value.replace(/^\/+/, "");
+
+  const segments = value.split("/").filter(Boolean);
+  if (segments.length >= 2) {
+    return { owner: segments[0], repo: segments[1] };
+  }
+  if (segments.length === 1 && owner0) {
+    return { owner: owner0, repo: segments[0] };
+  }
+  return null;
+}
+
+
+
 function computeRiskScore(features: {
   daysSinceLastCommit: number;
   commitRegularityScore: number;
