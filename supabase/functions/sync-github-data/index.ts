@@ -381,12 +381,16 @@ Deno.serve(async (req) => {
 
     const syncedCount = results.filter((result) => result.status === "synced").length;
     if (syncedCount === 0) {
-      const firstFailure = results.find((result) => result.status !== "synced");
+      const summary = results
+        .filter((result) => result.status !== "synced")
+        .map((result) => `${result.username}: ${result.detail ?? result.status}`)
+        .join(" | ");
       return new Response(
-        JSON.stringify({ error: firstFailure?.detail ?? "No students could be synced.", results }),
+        JSON.stringify({ error: summary || "No students could be synced.", results }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
     return new Response(
       JSON.stringify({ success: true, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
