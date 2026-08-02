@@ -99,18 +99,19 @@ Deno.serve(async (req) => {
       if (!student.github_username) continue;
 
       try {
-        const owner = student.github_username;
-        // Extract repo name from github_url like "https://github.com/user/repo"
-        let repo = "";
-        if (student.github_url) {
-          const parts = student.github_url.replace(/\/$/, "").split("/");
-          repo = parts[parts.length - 1] || "";
-        }
-
-        if (!repo) {
-          results.push({ studentId: student.id, username: owner, status: "failed", detail: "No GitHub repository URL is configured." });
+        const parsed = parseRepo(student.github_url, student.github_username);
+        if (!parsed) {
+          results.push({
+            studentId: student.id,
+            username: student.github_username,
+            status: "failed",
+            detail: student.github_url
+              ? `"${student.github_url}" is not a valid GitHub repository URL (expected https://github.com/owner/repo).`
+              : "No GitHub repository URL is configured.",
+          });
           continue;
         }
+        const { owner, repo } = parsed;
 
         // --- Fetch commits (last 100) ---
         const commitsRes = await fetch(
@@ -119,13 +120,25 @@ Deno.serve(async (req) => {
         );
         if (!commitsRes.ok) {
           const detail = await commitsRes.text();
-          const message = commitsRes.status === 404
-            ? `Repository ${owner}/${repo} was not found or is not accessible.`
-            : `GitHub returned ${commitsRes.status} for ${owner}/${repo}.`;
-          results.push({ studentId: student.id, username: owner, status: "failed", detail: message });
+          let message: string;
+          if (commitsRes.status === 404) {
+            // Distinguish "does not exist" from "exists but private / no token access"
+            const publicProbe = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+              headers: { Accept: "application/vnd.github+json" },
+            });
+            message = publicProbe.ok
+              ? `Repository ${owner}/${repo} exists but the lecturer's GitHub token has no access to it. Make the repository public, or give the token owner read access.`
+              : `Repository ${owner}/${repo} does not exist (or is private and invisible to the lecturer's token). Ask the student to correct their repository URL.`;
+          } else if (commitsRes.status === 409) {
+            message = `Repository ${owner}/${repo} is empty — it has no commits yet.`;
+          } else {
+            message = `GitHub returned ${commitsRes.status} for ${owner}/${repo}.`;
+          }
+          results.push({ studentId: student.id, username: student.github_username, status: "failed", detail: message });
           console.error(`${message} ${detail}`);
           continue;
         }
+
         const commits: GitHubCommit[] = await commitsRes.json();
 
         // --- Fetch branches ---
