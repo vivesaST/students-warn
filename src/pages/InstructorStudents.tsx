@@ -100,8 +100,52 @@ export default function InstructorStudents({ session }: InstructorStudentsProps)
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <StudentTable students={studentsForTable} />
+          <>
+            <StudentTable students={studentsForTable} />
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">GitHub repositories</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Correct a student&apos;s repository URL here if the sync reports it as missing. Repositories should be public.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {studentRows.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No students enrolled yet.</p>
+                )}
+                {studentRows.map((student) => (
+                  <div key={student.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div className="sm:w-56 shrink-0">
+                      <p className="text-sm font-medium text-foreground">{student.full_name}</p>
+                      <p className="text-xs text-muted-foreground">@{student.github_username ?? "no username"}</p>
+                    </div>
+                    <Input
+                      className="h-9 text-sm"
+                      placeholder="https://github.com/owner/repository"
+                      value={edits[student.id] ?? student.github_url ?? ""}
+                      onChange={(e) => setEdits((prev) => ({ ...prev, [student.id]: e.target.value }))}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => saveRepo(student.id, student.github_url ?? "")}
+                      disabled={savingId === student.id}
+                    >
+                      {savingId === student.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      <span className="ml-1.5">Save</span>
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </>
         )}
+
       </div>
     </AppLayout>
   );
