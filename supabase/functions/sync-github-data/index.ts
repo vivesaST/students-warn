@@ -99,18 +99,19 @@ Deno.serve(async (req) => {
       if (!student.github_username) continue;
 
       try {
-        const owner = student.github_username;
-        // Extract repo name from github_url like "https://github.com/user/repo"
-        let repo = "";
-        if (student.github_url) {
-          const parts = student.github_url.replace(/\/$/, "").split("/");
-          repo = parts[parts.length - 1] || "";
-        }
-
-        if (!repo) {
-          results.push({ studentId: student.id, username: owner, status: "failed", detail: "No GitHub repository URL is configured." });
+        const parsed = parseRepo(student.github_url, student.github_username);
+        if (!parsed) {
+          results.push({
+            studentId: student.id,
+            username: student.github_username,
+            status: "failed",
+            detail: student.github_url
+              ? `"${student.github_url}" is not a valid GitHub repository URL (expected https://github.com/owner/repo).`
+              : "No GitHub repository URL is configured.",
+          });
           continue;
         }
+        const { owner, repo } = parsed;
 
         // --- Fetch commits (last 100) ---
         const commitsRes = await fetch(
@@ -119,13 +120,25 @@ Deno.serve(async (req) => {
         );
         if (!commitsRes.ok) {
           const detail = await commitsRes.text();
-          const message = commitsRes.status === 404
-            ? `Repository ${owner}/${repo} was not found or is not accessible.`
-            : `GitHub returned ${commitsRes.status} for ${owner}/${repo}.`;
-          results.push({ studentId: student.id, username: owner, status: "failed", detail: message });
+          let message: string;
+          if (commitsRes.status === 404) {
+            // Distinguish "does not exist" from "exists but private / no token access"
+            const publicProbe = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+              headers: { Accept: "application/vnd.github+json" },
+            });
+            message = publicProbe.ok
+              ? `Repository ${owner}/${repo} exists but the lecturer's GitHub token has no access to it. Make the repository public, or give the token owner read access.`
+              : `Repository ${owner}/${repo} does not exist (or is private and invisible to the lecturer's token). Ask the student to correct their repository URL.`;
+          } else if (commitsRes.status === 409) {
+            message = `Repository ${owner}/${repo} is empty — it has no commits yet.`;
+          } else {
+            message = `GitHub returned ${commitsRes.status} for ${owner}/${repo}.`;
+          }
+          results.push({ studentId: student.id, username: student.github_username, status: "failed", detail: message });
           console.error(`${message} ${detail}`);
           continue;
         }
+
         const commits: GitHubCommit[] = await commitsRes.json();
 
         // --- Fetch branches ---
@@ -368,12 +381,16 @@ Deno.serve(async (req) => {
 
     const syncedCount = results.filter((result) => result.status === "synced").length;
     if (syncedCount === 0) {
-      const firstFailure = results.find((result) => result.status !== "synced");
+      const summary = results
+        .filter((result) => result.status !== "synced")
+        .map((result) => `${result.username}: ${result.detail ?? result.status}`)
+        .join(" | ");
       return new Response(
-        JSON.stringify({ error: firstFailure?.detail ?? "No students could be synced.", results }),
+        JSON.stringify({ error: summary || "No students could be synced.", results }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
     return new Response(
       JSON.stringify({ success: true, results }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -385,6 +402,40 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+/**
+ * Parses "owner/repo" out of a GitHub repository URL.
+ * Tolerates trailing ".git", trailing slashes, query strings and fragments,
+ * "git@github.com:owner/repo.git" SSH form, and bare "owner/repo" input.
+ * Falls back to the student's github_username as owner when the value only
+ * contains a repository name.
+ */
+function parseRepo(
+  rawUrl: string | null,
+  fallbackOwner: string | null
+): { owner: string; repo: string } | null {
+  const clean = (value: string) =>
+    value.trim().replace(/[?#].*$/, "").replace(/\/+$/, "").replace(/\.git$/i, "");
+
+  const owner0 = fallbackOwner ? clean(fallbackOwner).replace(/^@/, "") : "";
+  if (!rawUrl || !rawUrl.trim()) return null;
+
+  let value = clean(rawUrl);
+  value = value.replace(/^git@github\.com:/i, "");
+  value = value.replace(/^(https?:\/\/)?(www\.)?github\.com\//i, "");
+  value = value.replace(/^\/+/, "");
+
+  const segments = value.split("/").filter(Boolean);
+  if (segments.length >= 2) {
+    return { owner: segments[0], repo: segments[1] };
+  }
+  if (segments.length === 1 && owner0) {
+    return { owner: owner0, repo: segments[0] };
+  }
+  return null;
+}
+
+
 
 function computeRiskScore(features: {
   daysSinceLastCommit: number;

@@ -84,9 +84,21 @@ export default function Auth() {
             setLoading(false);
             return;
           }
+          const repoMatch = githubUrl
+            .trim()
+            .replace(/[?#].*$/, "")
+            .replace(/\/+$/, "")
+            .replace(/\.git$/i, "")
+            .match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([\w.-]+)\/([\w.-]+)$/i);
+          if (!repoMatch) {
+            setError("Enter a valid repository URL, e.g. https://github.com/your-username/your-project");
+            setLoading(false);
+            return;
+          }
           metadata.course_id = selectedCourseId;
           metadata.github_username = githubUsername.trim().replace(/^@/, "");
-          metadata.github_url = githubUrl.trim();
+          metadata.github_url = `https://github.com/${repoMatch[1]}/${repoMatch[2]}`;
+
         }
 
         const { error: signUpError } = await supabase.auth.signUp({
@@ -217,7 +229,7 @@ export default function Auth() {
                     required
                     className="h-9 text-sm"
                   />
-                  <p className="text-[10px] text-muted-foreground">Your lecturer uses this to track your commit activity.</p>
+                  <p className="text-[10px] text-muted-foreground">Your lecturer uses this to track your commit activity. The repository must be <span className="font-medium">public</span>.</p>
                 </div>
               </>
             )}

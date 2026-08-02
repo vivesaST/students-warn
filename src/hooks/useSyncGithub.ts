@@ -19,7 +19,7 @@ export function useSyncGithub() {
           : null;
         throw new Error(details?.error ?? error.message);
       }
-      const results: { status: string }[] = data?.results ?? [];
+      const results: { username?: string; status: string; detail?: string }[] = data?.results ?? [];
       const synced = results.filter((result) => result.status === "synced").length;
       const failed = results.length - synced;
       await Promise.all([
@@ -30,7 +30,11 @@ export function useSyncGithub() {
       toast({
         title: failed > 0 ? "GitHub sync partially complete" : "GitHub sync complete",
         description: failed > 0
-          ? `Synced ${synced} student(s); ${failed} could not be synced.`
+          ? `Synced ${synced} student(s). Failed: ` +
+            results
+              .filter((result) => result.status !== "synced")
+              .map((result) => `${result.username ?? "unknown"} — ${result.detail ?? result.status}`)
+              .join(" | ")
           : `Synced ${synced} student(s).`,
       });
       return data;

@@ -1,7 +1,14 @@
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
+import { Loader2, Save } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
+import { useQueryClient } from "@tanstack/react-query";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StudentTable } from "@/components/dashboard/StudentTable";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import { useProfile } from "@/hooks/useProfile";
 import { useStudents } from "@/hooks/useStudents";
 import type { Student } from "@/data/mockData";
@@ -10,9 +17,51 @@ interface InstructorStudentsProps {
   session: Session | null;
 }
 
+function normaliseRepoUrl(value: string): string | null {
+  const match = value
+    .trim()
+    .replace(/[?#].*$/, "")
+    .replace(/\/+$/, "")
+    .replace(/\.git$/i, "")
+    .match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([\w.-]+)\/([\w.-]+)$/i);
+  return match ? `https://github.com/${match[1]}/${match[2]}` : null;
+}
+
 export default function InstructorStudents({ session }: InstructorStudentsProps) {
   const { data: profile } = useProfile(session?.user?.id);
   const { data: studentRows = [], isLoading } = useStudents(profile?.role === "instructor" ? profile.id : undefined);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [edits, setEdits] = useState<Record<string, string>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  async function saveRepo(studentId: string, currentUrl: string) {
+    const raw = edits[studentId] ?? currentUrl;
+    const normalised = normaliseRepoUrl(raw);
+    if (!normalised) {
+      toast({
+        title: "Invalid repository URL",
+        description: "Use the form https://github.com/owner/repository",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSavingId(studentId);
+    const owner = normalised.split("/")[3];
+    const { error } = await supabase
+      .from("profiles")
+      .update({ github_url: normalised, github_username: owner })
+      .eq("id", studentId);
+    setSavingId(null);
+    if (error) {
+      toast({ title: "Could not update repository", description: error.message, variant: "destructive" });
+      return;
+    }
+    await queryClient.invalidateQueries({ queryKey: ["students"] });
+    setEdits((prev) => ({ ...prev, [studentId]: normalised }));
+    toast({ title: "Repository updated", description: `${normalised} saved. Run Sync GitHub to pull the data.` });
+  }
+
 
   const studentsForTable: Student[] = studentRows.map((s) => ({
     id: s.id,
@@ -51,8 +100,52 @@ export default function InstructorStudents({ session }: InstructorStudentsProps)
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : (
-          <StudentTable students={studentsForTable} />
+          <>
+            <StudentTable students={studentsForTable} />
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">GitHub repositories</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Correct a student&apos;s repository URL here if the sync reports it as missing. Repositories should be public.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {studentRows.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No students enrolled yet.</p>
+                )}
+                {studentRows.map((student) => (
+                  <div key={student.id} className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div className="sm:w-56 shrink-0">
+                      <p className="text-sm font-medium text-foreground">{student.full_name}</p>
+                      <p className="text-xs text-muted-foreground">@{student.github_username ?? "no username"}</p>
+                    </div>
+                    <Input
+                      className="h-9 text-sm"
+                      placeholder="https://github.com/owner/repository"
+                      value={edits[student.id] ?? student.github_url ?? ""}
+                      onChange={(e) => setEdits((prev) => ({ ...prev, [student.id]: e.target.value }))}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => saveRepo(student.id, student.github_url ?? "")}
+                      disabled={savingId === student.id}
+                    >
+                      {savingId === student.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      <span className="ml-1.5">Save</span>
+                    </Button>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </>
         )}
+
       </div>
     </AppLayout>
   );
