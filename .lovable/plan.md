@@ -1,23 +1,33 @@
-## Fix GitHub sync and the endless student loading screen
+## Fix the 404s and clarify the GitHub token model
 
-1. **Make the Edge Function report failures correctly**
-   - Validate the GitHub credential before processing students.
-   - Preserve useful GitHub errors such as invalid/expired token, repository not found, or inaccessible/private repository.
-   - Check every database write and report failures instead of returning `success: true` when no student was actually synced.
+Your new token works — the credential check now passes and the function reaches GitHub. The remaining failures are per-repository, and I verified both against the live GitHub API:
 
-2. **Fix the instructor Sync GitHub action**
-   - Read the function’s per-student results.
-   - Show an accurate success, partial-success, or failure message.
-   - Refresh the student/profile queries automatically after a successful sync.
+- `vivesaST/local-connect-market` → **exists and is public (200)**. The sync fails only because the saved URL ends in `.git`, and the code takes the last URL segment verbatim, so it asks GitHub for a repo literally named `local-connect-market.git` → 404.
+- `vivesaST/students-warn` → **genuinely does not exist (404)**. Wrong/typed repo name, renamed, deleted, or private.
 
-3. **Remove the infinite student “Syncing” loop**
-   - Stop using `total commits === 0` as proof that syncing is underway; a valid repository may genuinely have zero commits, and a failed sync also leaves zero.
-   - Show the syncing state only while an actual sync request is running.
-   - Otherwise show a clear pending/error/empty-repository state with a route back to the lecturer or an appropriate retry action.
+### Your questions answered
+- **Whose token?** The **lecturer's** (or a dedicated project account's). It's one server-side token stored as the `GITHUB_PAT` secret and used for every student. Students never supply tokens — they only give their username and repo URL.
+- **Same org?** Not required. Public student repos are readable by any token. An org only matters if repos are **private** — then the token owner must be a member/collaborator with read access, and a shared org is the cleanest way to arrange that.
+- **Recommendation:** tell students their project repo must be **public**. Then the lecturer's token needs only public read and nothing else has to be configured.
 
-4. **Deploy and verify end to end**
-   - Deploy `sync-github-data`.
-   - Test it with the current student repository and confirm that feature, commit, risk, and recommendation rows are created when GitHub succeeds.
-   - Verify that Dashboard, My Progress, and Course Info no longer bounce back to an endless spinner.
+### What I'll change
 
-**Confirmed current state:** the registered student `@vivesaST` has no `student_features` row and still has zero profile commits. The implementation currently converts GitHub HTTP failures into a normal function response, and the student dashboard interprets the resulting zero as perpetual syncing. If GitHub still returns `401` after this fix, the saved `GITHUB_PAT` must be replaced with a valid token before data can sync.
+1. **Robust repo-URL parsing** (`supabase/functions/sync-github-data/index.ts`)
+   - Strip a trailing `.git`, trailing slashes, query strings and `#` fragments.
+   - Parse owner **and** repo from the URL itself (`github.com/<owner>/<repo>`) instead of assuming the owner equals `github_username` — they differ when the repo is under an org.
+   - Fall back to `github_username` as owner only when the URL has no owner segment.
+
+2. **Clearer failure messages**
+   - Distinguish "repository not found" from "repository is private — the lecturer's token has no access" by checking the authenticated user's visibility, and say which owner/repo was actually requested.
+
+3. **Validate the URL at registration** (`src/pages/Auth.tsx`)
+   - Reject anything that isn't a `github.com/<owner>/<repo>` URL, and normalise it (drop `.git`) before saving, so bad values never reach the database.
+
+4. **Let the lecturer fix a wrong repo** (instructor Students page)
+   - Add an inline "Edit GitHub repo" action so a typo like `students-warn` can be corrected without re-registering the student, with an RLS-safe update restricted to students in the instructor's own courses.
+
+5. **Per-student sync feedback** (`src/hooks/useSyncGithub.ts`)
+   - Toast lists each student and their outcome instead of only the first error, so partial success is visible.
+
+6. **Verify live**
+   - Run the function after the fix and confirm `local-connect-market` syncs (commits, features, risk rows written). `students-warn` will still fail until that student supplies a real repo URL — which step 4 now lets you fix in the UI.
