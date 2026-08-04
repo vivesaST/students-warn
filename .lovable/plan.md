@@ -1,33 +1,54 @@
-## Fix the 404s and clarify the GitHub token model
+# Answering the supervisor: make it genuinely rule-based, then re-document Chapter 4
 
-Your new token works — the credential check now passes and the function reaches GitHub. The remaining failures are per-repository, and I verified both against the live GitHub API:
+## What the supervisor is right about
 
-- `vivesaST/local-connect-market` → **exists and is public (200)**. The sync fails only because the saved URL ends in `.git`, and the code takes the last URL segment verbatim, so it asks GitHub for a repo literally named `local-connect-market.git` → 404.
-- `vivesaST/students-warn` → **genuinely does not exist (404)**. Wrong/typed repo name, renamed, deleted, or private.
+Verified in the code:
 
-### Your questions answered
-- **Whose token?** The **lecturer's** (or a dedicated project account's). It's one server-side token stored as the `GITHUB_PAT` secret and used for every student. Students never supply tokens — they only give their username and repo URL.
-- **Same org?** Not required. Public student repos are readable by any token. An org only matters if repos are **private** — then the token owner must be a member/collaborator with read access, and a shared org is the cleanest way to arrange that.
-- **Recommendation:** tell students their project repo must be **public**. Then the lecturer's token needs only public read and nothing else has to be configured.
+- `computeRiskScore()` in `supabase/functions/sync-github-data/index.ts` (lines 440-469) is a weighted sum — `score += min(20, daysSinceLastCommit * 3)` etc. There is no explicit IF-THEN rule anywhere in it.
+- Only `generateRecommendations()` (line 471 onward) uses IF-THEN conditions, and it does not feed the score.
+- Risk level is a single threshold line: `riskScore >= 65 ? "high" : >= 40 ? "moderate" : "low"`.
 
-### What I'll change
+So the chapter's claim of a rule-based engine is not supported by the implementation. Part 1 fixes that in code; Part 2 rewrites the chapter around the fixed code.
 
-1. **Robust repo-URL parsing** (`supabase/functions/sync-github-data/index.ts`)
-   - Strip a trailing `.git`, trailing slashes, query strings and `#` fragments.
-   - Parse owner **and** repo from the URL itself (`github.com/<owner>/<repo>`) instead of assuming the owner equals `github_username` — they differ when the repo is under an org.
-   - Fall back to `github_username` as owner only when the URL has no owner segment.
+## Part 1 — Build a real rule engine
 
-2. **Clearer failure messages**
-   - Distinguish "repository not found" from "repository is private — the lecturer's token has no access" by checking the authenticated user's visibility, and say which owner/repo was actually requested.
+Create a dedicated, screenshottable module: `supabase/functions/_shared/rule-engine.ts`.
 
-3. **Validate the URL at registration** (`src/pages/Auth.tsx`)
-   - Reject anything that isn't a `github.com/<owner>/<repo>` URL, and normalise it (drop `.git`) before saving, so bad values never reach the database.
+It holds a declarative rule table — each rule an object with `id`, `category`, `description`, a `condition(features)` predicate, `points`, and a `message`. Example shape:
 
-4. **Let the lecturer fix a wrong repo** (instructor Students page)
-   - Add an inline "Edit GitHub repo" action so a typo like `students-warn` can be corrected without re-registering the student, with an RLS-safe update restricted to students in the instructor's own courses.
+```text
+{ id: "R1", category: "Inactivity",
+  description: "IF days_since_last_commit >= 7 THEN add 25 risk points",
+  condition: f => f.daysSinceLastCommit >= 7,
+  points: 25,
+  message: "No commits for a week or more" }
+```
 
-5. **Per-student sync feedback** (`src/hooks/useSyncGithub.ts`)
-   - Toast lists each student and their outcome instead of only the first error, so partial success is visible.
+Roughly 15-18 rules covering the same 15 features already collected: inactivity bands, commit frequency, regularity, weekly volume, churn, commit-message quality, branch usage, merge frequency, issue activity.
 
-6. **Verify live**
-   - Run the function after the fix and confirm `local-connect-market` syncs (commits, features, risk rows written). `students-warn` will still fail until that student supplies a real repo URL — which step 4 now lets you fix in the UI.
+The engine function evaluates every rule in order, collects the rules that fired, sums their points, clamps to 0-100, and applies explicit classification rules (IF score >= 65 THEN High, ELSE IF >= 40 THEN Moderate, ELSE Low). It returns `{ score, level, firedRules[] }` so the dashboard can show *why* a student is at risk.
+
+Recommendation generation moves into the same file and is driven by the same fired rules, so each rule owns both its score contribution and its advice — this is the "source code implementing the recommendation generation logic" the supervisor asked for.
+
+`sync-github-data/index.ts` then imports the engine instead of its own `computeRiskScore` / `generateRecommendations`, and the old functions are deleted.
+
+Thresholds are chosen so current scores stay in the same ballpark; no database change is required (score and level columns are unchanged). Optionally the fired-rule list can be stored so the dashboard shows triggered rules — this needs one new column on `risk_assessments`, which I will include only if you want the dashboard evidence.
+
+## Part 2 — Rewrite Chapter 4 with real evidence
+
+Deliver a new `.docx` restructured to answer each comment directly:
+
+- **4.2 Implementation environment** — plus placeholders for the GitHub repository link and the live URL, which you fill in once you push and deploy.
+- **4.3.1 Authentication and authorisation** — expanded past "Supabase Auth": registration/login flow diagram, bcrypt password hashing performed by GoTrue (passwords never reach the app), JWT issue/refresh and session persistence in the browser client, and role validation on two levels — the `app_role` enum with `get_user_role()` and the RLS policies (`owns_course`, `is_my_student`) that scope every query server-side.
+- **4.3.2 GitHub data ingestion pipeline** — split into four subsections instead of one paragraph: GitHub REST API calls made, the Edge Function orchestration and error handling, the database tables written (`student_features`, `daily_commits`, `weekly_commits`, `risk_assessments`, `recommendations`), and the dashboard consumption via TanStack Query.
+- **4.3.3 Rule-Based Risk Assessment Engine** — retitled as requested, with the rule table listed in full, a code screenshot of `rule-engine.ts`, a code screenshot of the recommendation logic, and a dashboard screenshot showing the resulting classification.
+- **4.4 Screenshots** — login, lecturer registration, student registration, create course, join course, GitHub sync operation, risk assessment result, plus the two code screenshots. Captured from the running app with Playwright.
+- **4.5 Testing and evaluation** — rewritten honestly. The previous accuracy figures are not defensible, so they are replaced with: the pilot cohort (the students actually registered, stated as n), no train/test split because the engine is knowledge-based rather than trained, rule-by-rule validation against lecturer judgement, a confusion matrix over the pilot cohort with the arithmetic for precision/recall/F1 shown, and an explicit limitation that the sample is small and results are indicative only.
+
+## Technical notes
+
+- New file: `supabase/functions/_shared/rule-engine.ts` (declarative rules + evaluator + recommendation mapping).
+- Edited: `supabase/functions/sync-github-data/index.ts` (import engine, delete the two local functions).
+- No schema change unless you want fired rules persisted for the dashboard.
+- The Edge Function redeploys automatically.
+- Screenshots captured against the local preview; the document is generated with `python-docx` and page-checked before delivery.
