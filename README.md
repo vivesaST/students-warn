@@ -35,4 +35,4 @@ VITE_SUPABASE_ANON_KEY=your-key
 
 ## License
 
-MIT
+
