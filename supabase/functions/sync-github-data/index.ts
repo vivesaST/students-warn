@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
+import { evaluateRisk } from "../_shared/rule-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -303,19 +304,23 @@ Deno.serve(async (req) => {
         const { error: weeklyError } = await supabase.from("weekly_commits").upsert(weeklyRows, { onConflict: "student_id,week_label" });
         if (weeklyError) throw weeklyError;
 
-        // === Risk scoring ===
-        const riskScore = computeRiskScore({
+        // === Rule-based risk assessment ===
+        const assessment = evaluateRisk({
           daysSinceLastCommit,
           commitRegularityScore,
           commitsLastWeek,
+          commitsLast3Days,
           commitFrequencyPerDay,
+          totalCommits,
           codeChurnRatio,
           commitMessageQualityScore,
           branchCount,
           mergeFrequency,
           issueCreationRate,
+          avgCommitSizeLinesChanged: avgCommitSize,
         });
-        const riskLevel = riskScore >= 65 ? "high" : riskScore >= 40 ? "moderate" : "low";
+        const riskScore = assessment.score;
+        const riskLevel = assessment.level;
 
         const { error: riskError } = await supabase.from("risk_assessments").insert({
           student_id: student.id,
@@ -333,15 +338,9 @@ Deno.serve(async (req) => {
         });
         if (riskHistoryError) throw riskHistoryError;
 
-        // === Generate recommendations ===
-        const recs = generateRecommendations({
-          daysSinceLastCommit,
-          commitRegularityScore,
-          commitsLastWeek,
-          codeChurnRatio,
-          commitMessageQualityScore,
-          branchCount,
-        });
+        // === Recommendations asserted by the fired rules ===
+        const recs = assessment.recommendations;
+
         // Delete old recs and insert new
         const { error: deleteRecommendationsError } = await supabase.from("recommendations").delete().eq("student_id", student.id);
         if (deleteRecommendationsError) throw deleteRecommendationsError;
@@ -435,102 +434,3 @@ function parseRepo(
   return null;
 }
 
-
-
-function computeRiskScore(features: {
-  daysSinceLastCommit: number;
-  commitRegularityScore: number;
-  commitsLastWeek: number;
-  commitFrequencyPerDay: number;
-  codeChurnRatio: number;
-  commitMessageQualityScore: number;
-  branchCount: number;
-  mergeFrequency: number;
-  issueCreationRate: number;
-}): number {
-  let score = 50; // baseline
-
-  // High weight factors
-  score += Math.min(20, features.daysSinceLastCommit * 3);
-  score -= Math.min(15, features.commitRegularityScore * 0.15);
-  score -= Math.min(15, features.commitsLastWeek * 3);
-
-  // Medium weight factors
-  score -= Math.min(10, features.commitFrequencyPerDay * 10);
-  score += Math.min(10, features.codeChurnRatio * 5);
-  score -= Math.min(10, features.commitMessageQualityScore * 0.1);
-
-  // Low weight factors
-  score -= Math.min(5, features.branchCount * 1.5);
-  score -= Math.min(5, features.mergeFrequency * 2);
-  score -= Math.min(5, features.issueCreationRate * 2);
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function generateRecommendations(features: {
-  daysSinceLastCommit: number;
-  commitRegularityScore: number;
-  commitsLastWeek: number;
-  codeChurnRatio: number;
-  commitMessageQualityScore: number;
-  branchCount: number;
-}): { priority: string; title: string; description: string; icon: string }[] {
-  const recs: { priority: string; title: string; description: string; icon: string }[] = [];
-
-  if (features.daysSinceLastCommit > 3) {
-    recs.push({
-      priority: "high",
-      title: "Resume committing immediately",
-      description: `You haven't committed in ${features.daysSinceLastCommit} days. Start with small, incremental changes to get back on track.`,
-      icon: "AlertTriangle",
-    });
-  }
-
-  if (features.commitRegularityScore < 50) {
-    recs.push({
-      priority: "high",
-      title: "Improve commit consistency",
-      description: "Your commit pattern is irregular. Try to commit at least once daily, even if changes are small.",
-      icon: "Clock",
-    });
-  }
-
-  if (features.commitsLastWeek < 3) {
-    recs.push({
-      priority: "medium",
-      title: "Increase weekly commit volume",
-      description: "Aim for at least 5 commits per week. Break large tasks into smaller, committable units.",
-      icon: "TrendingUp",
-    });
-  }
-
-  if (features.commitMessageQualityScore < 60) {
-    recs.push({
-      priority: "medium",
-      title: "Write more descriptive commit messages",
-      description: "Good commit messages explain 'what' and 'why'. Use the format: 'type: brief description of change'.",
-      icon: "FileText",
-    });
-  }
-
-  if (features.branchCount < 2) {
-    recs.push({
-      priority: "low",
-      title: "Use feature branches",
-      description: "Create separate branches for features and bug fixes. This shows professional Git workflow practices.",
-      icon: "GitBranch",
-    });
-  }
-
-  if (features.codeChurnRatio > 0.8) {
-    recs.push({
-      priority: "medium",
-      title: "Reduce code churn",
-      description: "You're deleting a lot of what you write. Plan your approach before coding to reduce rework.",
-      icon: "RefreshCw",
-    });
-  }
-
-  return recs.slice(0, 4);
-}

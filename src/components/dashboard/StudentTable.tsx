@@ -125,7 +125,7 @@ export function StudentTable({ students }: StudentTableProps) {
                   Commits <SortIcon k="totalCommits" />
                 </button>
               </TableHead>
-              <TableHead className="text-muted-foreground text-xs hidden xl:table-cell">Prediction Score</TableHead>
+              <TableHead className="text-muted-foreground text-xs hidden xl:table-cell">Risk Score</TableHead>
               <TableHead className="text-muted-foreground text-xs text-right">Action</TableHead>
             </TableRow>
           </TableHeader>

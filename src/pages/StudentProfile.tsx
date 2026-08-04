@@ -131,8 +131,9 @@ export default function StudentProfile({ session }: StudentProfileProps) {
         {/* Features grid */}
         {classAverageFeatures && (
           <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-1">Prediction Features</h3>
-            <p className="text-xs text-muted-foreground mb-4">All 15 features used by the ML model. Arrows compare to class average.</p>
+            <h3 className="text-sm font-semibold text-foreground mb-1">Rule Engine Input Features</h3>
+            <p className="text-xs text-muted-foreground mb-4">All 15 features evaluated by the rule-based risk engine. Arrows compare to class average.</p>
+
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {featureKeys.map((key) => {
                 const meta = featureLabels[key];
