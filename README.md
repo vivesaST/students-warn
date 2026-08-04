@@ -4,17 +4,17 @@ An early warning platform for software engineering courses that monitors GitHub 
 
 ## Features
 
-- 15 Behavioral Metrics** — Tracks commit frequency, regularity, code churn, branch usage, merge patterns, and more
-- Risk Scoring** - Computes a 0–100 risk score with Low / Moderate / High classification
+- 15 Behavioral Metrics - Tracks commit frequency, regularity, code churn, branch usage, merge patterns, and more
+- Risk Scoring - Computes a 0–100 risk score with Low / Moderate / High classification
 - Student Dashboard - ersonal risk overview, radar chart vs class average, commit timeline, and AI recommendations
-- **Instructor Dashboard - Class-wide KPIs, risk distribution, student table with search/filter/sort, and individual profiles
+- Instructor Dashboard - Class-wide KPIs, risk distribution, student table with search/filter/sort, and individual profiles
 - GitHub Sync - Automated data pipeline via Supabase Edge Functions
 
 ## Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, Recharts
-- **Backend**: Supabase (Auth, PostgreSQL, Edge Functions)
-- **State Management**: TanStack React Query
+- Frontend: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, Recharts
+- Backend: Supabase (Auth, PostgreSQL, Edge Functions)
+- State Management: TanStack React Query
 
 ## Getting Started
 
