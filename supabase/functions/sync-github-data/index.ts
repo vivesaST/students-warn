@@ -326,6 +326,8 @@ Deno.serve(async (req) => {
           student_id: student.id,
           risk_score: riskScore,
           risk_level: riskLevel,
+          baseline_score: BASELINE_RISK,
+          fired_rules: assessment.firedRules,
         });
         if (riskError) throw riskError;
 
