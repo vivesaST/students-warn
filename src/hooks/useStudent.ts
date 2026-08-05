@@ -86,6 +86,8 @@ export function useStudent(studentId: string | undefined) {
         weeklyCommitHistory,
         recommendations,
         hasGithubData: Boolean(f),
+        firedRules: Array.isArray(r?.fired_rules) ? (r!.fired_rules as unknown as FiredRule[]) : [],
+        baselineScore: r?.baseline_score ?? 30,
       };
     },
     enabled: !!studentId,
