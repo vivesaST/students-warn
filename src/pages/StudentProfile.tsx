@@ -6,6 +6,7 @@ import { RiskTrendChart } from "@/components/dashboard/RiskTrendChart";
 import { FeatureRadarChart } from "@/components/dashboard/RadarChart";
 import { CommitBarChart } from "@/components/dashboard/CommitTimelineChart";
 import { RecommendationsPanel } from "@/components/dashboard/RecommendationsPanel";
+import { RuleAuditPanel } from "@/components/dashboard/RuleAuditPanel";
 import { useStudent } from "@/hooks/useStudent";
 import { useProfile } from "@/hooks/useProfile";
 import { useClassAverageFeatures } from "@/hooks/useClassData";
