@@ -159,6 +159,13 @@ export default function StudentProfile({ session }: StudentProfileProps) {
           </div>
         )}
 
+        <RuleAuditPanel
+          firedRules={student.firedRules}
+          baselineScore={student.baselineScore}
+          riskScore={student.riskScore}
+          riskLevel={student.riskLevel}
+        />
+
         <RecommendationsPanel recommendations={student.recommendations} title={`Recommendations for ${student.name.split(" ")[0]}`} />
       </div>
     </AppLayout>
