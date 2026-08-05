@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2.49.1";
-import { evaluateRisk } from "../_shared/rule-engine.ts";
+import { evaluateRisk, BASELINE_RISK } from "../_shared/rule-engine.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -326,6 +326,8 @@ Deno.serve(async (req) => {
           student_id: student.id,
           risk_score: riskScore,
           risk_level: riskLevel,
+          baseline_score: BASELINE_RISK,
+          fired_rules: assessment.firedRules,
         });
         if (riskError) throw riskError;
 

@@ -6,6 +6,7 @@ import { FeatureRadarChart } from "@/components/dashboard/RadarChart";
 import { CommitTimelineChart } from "@/components/dashboard/CommitTimelineChart";
 import { RiskTrendChart } from "@/components/dashboard/RiskTrendChart";
 import { RecommendationsPanel } from "@/components/dashboard/RecommendationsPanel";
+import { RuleAuditPanel } from "@/components/dashboard/RuleAuditPanel";
 import { useProfile } from "@/hooks/useProfile";
 import { useStudent } from "@/hooks/useStudent";
 import { useClassAverageFeatures } from "@/hooks/useClassData";
@@ -295,6 +296,14 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
             </div>
           </div>
         )}
+
+        <RuleAuditPanel
+          firedRules={student.firedRules}
+          baselineScore={student.baselineScore}
+          riskScore={student.riskScore}
+          riskLevel={student.riskLevel}
+          title="Why this score? — Rules that fired for you"
+        />
 
         <RecommendationsPanel recommendations={student.recommendations} title="Your Personalized Action Plan" />
       </div>

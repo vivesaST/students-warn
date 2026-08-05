@@ -19,6 +19,16 @@ export interface Student {
   weeklyCommitHistory: WeeklyCommits[];
   recommendations: Recommendation[];
   hasGithubData?: boolean;
+  firedRules?: FiredRule[];
+  baselineScore?: number;
+}
+
+/** One IF-THEN production rule that fired during the last inference cycle. */
+export interface FiredRule {
+  id: string;
+  category: string;
+  statement: string;
+  points: number;
 }
 
 export interface StudentFeatures {
