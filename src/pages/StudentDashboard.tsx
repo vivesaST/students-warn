@@ -296,6 +296,14 @@ export default function StudentDashboard({ session }: StudentDashboardProps) {
           </div>
         )}
 
+        <RuleAuditPanel
+          firedRules={student.firedRules}
+          baselineScore={student.baselineScore}
+          riskScore={student.riskScore}
+          riskLevel={student.riskLevel}
+          title="Why this score? — Rules that fired for you"
+        />
+
         <RecommendationsPanel recommendations={student.recommendations} title="Your Personalized Action Plan" />
       </div>
     </AppLayout>
