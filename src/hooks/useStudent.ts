@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { Student, StudentFeatures, WeeklyRisk, DailyCommits, WeeklyCommits, Recommendation, RiskLevel } from "@/data/mockData";
+import type { Student, StudentFeatures, WeeklyRisk, DailyCommits, WeeklyCommits, Recommendation, RiskLevel, FiredRule } from "@/data/mockData";
 
 export function useStudent(studentId: string | undefined) {
   return useQuery({
