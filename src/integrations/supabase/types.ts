@@ -217,7 +217,9 @@ export type Database = {
       risk_assessments: {
         Row: {
           assessed_at: string
+          baseline_score: number
           created_at: string
+          fired_rules: Json
           id: string
           risk_level: Database["public"]["Enums"]["risk_level"]
           risk_score: number
@@ -225,7 +227,9 @@ export type Database = {
         }
         Insert: {
           assessed_at?: string
+          baseline_score?: number
           created_at?: string
+          fired_rules?: Json
           id?: string
           risk_level: Database["public"]["Enums"]["risk_level"]
           risk_score: number
@@ -233,7 +237,9 @@ export type Database = {
         }
         Update: {
           assessed_at?: string
+          baseline_score?: number
           created_at?: string
+          fired_rules?: Json
           id?: string
           risk_level?: Database["public"]["Enums"]["risk_level"]
           risk_score?: number
